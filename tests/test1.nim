@@ -7,6 +7,6 @@
 
 import unittest
 
-import paravim
+import pvim
 test "correct welcome":
   check getWelcomeMessage() == "Hello, World!"
