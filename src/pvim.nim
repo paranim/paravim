@@ -1,4 +1,4 @@
-import paravim/libvim
+import pvimpkg/libvim
 
 vimInit(0, nil)
 let buf = vimBufferOpen("pvim.nimble", 1, 0)

@@ -5,6 +5,7 @@ author        = "oakes"
 description   = "A parasitic editor"
 license       = "Public Domain"
 srcDir        = "src"
+installExt    = @["dll", "so", "dylib"]
 bin           = @["pvim"]
 
 
