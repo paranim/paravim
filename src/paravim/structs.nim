@@ -4,7 +4,6 @@ type
   short_u* = cushort
   char_u* = cuchar
 
-type
   pos_T* {.bycopy.} = object
     lnum*: linenr_T            ##  line number
     col*: colnr_T              ##  column number
@@ -28,6 +27,7 @@ type
     WIN_CURSOR_PREVIOUS,      ##  <C-w>p
     WIN_MOVE_ROTATE_DOWNWARDS, ##  <C-w>r
     WIN_MOVE_ROTATE_UPWARDS   ##  <C-w>R
+
   yankInfo_T* {.bycopy.} = object
     op_char*: cint
     extra_op_char*: cint
@@ -52,12 +52,10 @@ type
   YankCallback* = proc (yankInfo: ptr yankInfo_T)
   GotoCallback* = proc (gotoInfo: gotoRequest_T): cint
 
-type
   lpos_T* {.bycopy.} = object
     lnum*: linenr_T            ##  line number
     col*: colnr_T              ##  column number
 
-type
   buf_T* = pointer
   searchHighlight_T* {.bycopy.} = object
     start*: pos_T

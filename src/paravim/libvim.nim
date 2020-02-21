@@ -37,7 +37,7 @@ proc vimInit*(argc: cint; argv: cstringArray){.cdecl, dynlib: dllname, importc: 
 ##  Open a buffer and set as current.
 ##
 
-proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): ptr buf_T {.cdecl, dynlib: dllname, importc: "vimBufferOpen".}
+proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): buf_T {.cdecl, dynlib: dllname, importc: "vimBufferOpen".}
 ##
 ##  vimBufferCheckIfChanged
 ##
@@ -47,16 +47,16 @@ proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): ptr buf_T
 ##  Returns 0 otherwise
 ##
 
-#proc vimBufferCheckIfChanged*(buf: ptr buf_T): cint
-#proc vimBufferGetById*(id: cint): ptr buf_T
-#proc vimBufferGetCurrent*(): ptr buf_T
-#proc vimBufferSetCurrent*(buf: ptr buf_T)
-#proc vimBufferGetFilename*(buf: ptr buf_T): ptr char_u
-#proc vimBufferGetFiletype*(buf: ptr buf_T): ptr char_u
-#proc vimBufferGetId*(buf: ptr buf_T): cint
-#proc vimBufferGetLastChangedTick*(buf: ptr buf_T): clong
-#proc vimBufferGetLine*(buf: ptr buf_T; lnum: linenr_T): ptr char_u
-#proc vimBufferGetLineCount*(buf: ptr buf_T): csize
+#proc vimBufferCheckIfChanged*(buf: buf_T): cint
+#proc vimBufferGetById*(id: cint): buf_T
+#proc vimBufferGetCurrent*(): buf_T
+#proc vimBufferSetCurrent*(buf: buf_T)
+#proc vimBufferGetFilename*(buf: buf_T): ptr char_u
+#proc vimBufferGetFiletype*(buf: buf_T): ptr char_u
+#proc vimBufferGetId*(buf: buf_T): cint
+#proc vimBufferGetLastChangedTick*(buf: buf_T): clong
+proc vimBufferGetLine*(buf: buf_T; lnum: linenr_T): ptr char_u {.cdecl, dynlib: dllname, importc: "vimBufferGetLine".}
+#proc vimBufferGetLineCount*(buf: buf_T): csize
 ##
 ##  vimBufferSetLines
 ##
@@ -68,9 +68,9 @@ proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): ptr buf_T
 ##  vimBufferSetLine(buf, 0, 0, ["def"]); // Insert "def" before the contents of the buffer
 ##
 
-#proc vimBufferSetLines*(buf: ptr buf_T; start: linenr_T; `end`: linenr_T;
+#proc vimBufferSetLines*(buf: buf_T; start: linenr_T; `end`: linenr_T;
 #                       lines: ptr ptr char_u; count: cint)
-#proc vimBufferGetModified*(buf: ptr buf_T): cint
+#proc vimBufferGetModified*(buf: buf_T): cint
 #proc vimSetBufferUpdateCallback*(bufferUpdate: BufferUpdateCallback)
 ## **
 ##  Autocommands
