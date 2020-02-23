@@ -6,7 +6,14 @@
 # To run these tests, simply execute `nimble test`.
 
 import unittest
+import pvimpkg/libvim
 
-import pvim
-test "correct welcome":
-  check getWelcomeMessage() == "Hello, World!"
+vimInit(0, nil)
+
+test "set the tab size":
+  vimOptionSetTabSize(2)
+  check vimOptionGetTabSize() == 2
+
+test "read a line":
+  let buf = vimBufferOpen("tests/hello.txt", 1, 0)
+  check vimBufferGetLine(buf, 1) == "Hello, world!"
