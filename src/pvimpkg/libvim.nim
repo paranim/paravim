@@ -2,17 +2,17 @@ import structs
 
 const dllname =
   when defined(windows):
-    when defined(paravimtest):
+    when not defined(release):
       "src/pvimpkg/libvim.dll"
     else:
       "pvimpkg/libvim.dll"
   elif defined(macosx):
-    when defined(paravimtest):
+    when not defined(release):
       "src/pvimpkg/libvim.dylib"
     else:
       "pvimpkg/libvim.dylib"
   elif defined(linux):
-    when defined(paravimtest):
+    when not defined(release):
       "src/pvimpkg/libvim.so"
     else:
       "pvimpkg/libvim.so"
