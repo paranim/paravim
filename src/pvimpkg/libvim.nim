@@ -46,7 +46,7 @@ proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): buf_T {.c
 
 #proc vimBufferCheckIfChanged*(buf: buf_T): cint
 #proc vimBufferGetById*(id: cint): buf_T
-#proc vimBufferGetCurrent*(): buf_T
+proc vimBufferGetCurrent*(): buf_T {.cdecl, dynlib: getLib(), importc: "vimBufferGetCurrent".}
 #proc vimBufferSetCurrent*(buf: buf_T)
 #proc vimBufferGetFilename*(buf: buf_T): ptr char_u
 #proc vimBufferGetFiletype*(buf: buf_T): ptr char_u
@@ -68,12 +68,12 @@ proc vimBufferGetLine*(buf: buf_T; lnum: linenr_T): ptr char_u {.cdecl, dynlib: 
 #proc vimBufferSetLines*(buf: buf_T; start: linenr_T; `end`: linenr_T;
 #                       lines: ptr ptr char_u; count: cint)
 #proc vimBufferGetModified*(buf: buf_T): cint
-#proc vimSetBufferUpdateCallback*(bufferUpdate: BufferUpdateCallback)
+proc vimSetBufferUpdateCallback*(bufferUpdate: BufferUpdateCallback) {.cdecl, dynlib: getLib(), importc: "vimSetBufferUpdateCallback".}
 ## **
 ##  Autocommands
 ## *
 
-#proc vimSetAutoCommandCallback*(autoCommandDispatch: AutoCommandCallback)
+proc vimSetAutoCommandCallback*(autoCommandDispatch: AutoCommandCallback) {.cdecl, dynlib: getLib(), importc: "vimSetAutoCommandCallback".}
 ## *
 ##  Commandline
 ## *
