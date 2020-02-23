@@ -1,21 +1,18 @@
 import structs
+import os
 
-const dllname =
-  when defined(windows):
-    when not defined(release):
-      "src/pvimpkg/libvim.dll"
-    else:
-      "pvimpkg/libvim.dll"
-  elif defined(macosx):
-    when not defined(release):
-      "src/pvimpkg/libvim.dylib"
-    else:
-      "pvimpkg/libvim.dylib"
-  elif defined(linux):
-    when not defined(release):
-      "src/pvimpkg/libvim.so"
-    else:
-      "pvimpkg/libvim.so"
+proc getLib(): string =
+  const extension =
+    when defined(windows):
+      "dll"
+    elif defined(macosx):
+      "dylib"
+    elif defined(linux):
+      "so"
+  when not defined(release):
+    "src/pvimpkg/libvim." & extension
+  else:
+    getAppDir().joinPath("pvimpkg").joinPath("libvim." & extension)
 
 ##  libvim.c
 ##
@@ -27,7 +24,7 @@ const dllname =
 ##  for the command line arguments for this vim instance.
 ##
 
-proc vimInit*(argc: cint; argv: cstringArray){.cdecl, dynlib: dllname, importc: "vimInit".}
+proc vimInit*(argc: cint; argv: cstringArray){.cdecl, dynlib: getLib(), importc: "vimInit".}
 ## **
 ##  Buffer Methods
 ## *
@@ -37,7 +34,7 @@ proc vimInit*(argc: cint; argv: cstringArray){.cdecl, dynlib: dllname, importc: 
 ##  Open a buffer and set as current.
 ##
 
-proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): buf_T {.cdecl, dynlib: dllname, importc: "vimBufferOpen".}
+proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): buf_T {.cdecl, dynlib: getLib(), importc: "vimBufferOpen".}
 ##
 ##  vimBufferCheckIfChanged
 ##
@@ -55,7 +52,7 @@ proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): buf_T {.c
 #proc vimBufferGetFiletype*(buf: buf_T): ptr char_u
 #proc vimBufferGetId*(buf: buf_T): cint
 #proc vimBufferGetLastChangedTick*(buf: buf_T): clong
-proc vimBufferGetLine*(buf: buf_T; lnum: linenr_T): ptr char_u {.cdecl, dynlib: dllname, importc: "vimBufferGetLine".}
+proc vimBufferGetLine*(buf: buf_T; lnum: linenr_T): ptr char_u {.cdecl, dynlib: getLib(), importc: "vimBufferGetLine".}
 #proc vimBufferGetLineCount*(buf: buf_T): csize
 ##
 ##  vimBufferSetLines
@@ -150,10 +147,10 @@ proc vimBufferGetLine*(buf: buf_T; lnum: linenr_T): ptr char_u {.cdecl, dynlib: 
 ##  Options
 ##
 
-proc vimOptionSetTabSize*(tabSize: cint) {.cdecl, dynlib: dllname, importc: "vimOptionSetTabSize".}
-proc vimOptionSetInsertSpaces*(insertSpaces: cint) {.cdecl, dynlib: dllname, importc: "vimOptionSetInsertSpaces".}
-proc vimOptionGetInsertSpaces*(): cint {.cdecl, dynlib: dllname, importc: "vimOptionGetInsertSpaces".}
-proc vimOptionGetTabSize*(): cint {.cdecl, dynlib: dllname, importc: "vimOptionGetTabSize".}
+proc vimOptionSetTabSize*(tabSize: cint) {.cdecl, dynlib: getLib(), importc: "vimOptionSetTabSize".}
+proc vimOptionSetInsertSpaces*(insertSpaces: cint) {.cdecl, dynlib: getLib(), importc: "vimOptionSetInsertSpaces".}
+proc vimOptionGetInsertSpaces*(): cint {.cdecl, dynlib: getLib(), importc: "vimOptionGetInsertSpaces".}
+proc vimOptionGetTabSize*(): cint {.cdecl, dynlib: getLib(), importc: "vimOptionGetTabSize".}
 ## **
 ##  Registers
 ## *
