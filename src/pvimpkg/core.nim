@@ -93,10 +93,9 @@ proc tick*(game: RootGame) =
   glClear(GL_COLOR_BUFFER_BIT)
   glViewport(0, 0, int32(windowWidth), int32(windowHeight))
 
+  var e = deepCopy(text.monoEntity)
   for i in 0 ..< lines.len:
-    var e = deepCopy(text.monoEntity)
-    text.add(e, text.baseMonoEntity, text.monoFont, lines[i])
-    e.project(float(windowWidth), float(windowHeight))
-    e.translate(0f, i.cfloat * text.monoFont.height * fontSize)
-    e.scale(fontSize, fontSize)
-    render(game, e)
+    text.addLine(e, text.baseMonoEntity, text.monoFont, lines[i])
+  e.project(float(windowWidth), float(windowHeight))
+  e.scale(fontSize, fontSize)
+  render(game, e)

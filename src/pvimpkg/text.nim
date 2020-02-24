@@ -124,7 +124,10 @@ var
   baseMonoEntity*: UncompiledTextEntity
   monoEntity*: ParavimTextEntity
 
-proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, text: cstring) =
+proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, text: cstring) =
+  instancedEntity.uniforms.u_char_counts.data.add(0)
+  instancedEntity.uniforms.u_char_counts.disable = false
+  let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
   var
     x = 0f
     i = 0
@@ -134,15 +137,8 @@ proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, 
       bakedChar = font.chars[charIndex]
     var e = entity
     e.crop(bakedChar, x, font.baseline)
-    if i == instancedEntity.instanceCount:
-      instancedEntity.add(e)
-    else:
-      instancedEntity[i] = e
-    if instancedEntity.uniforms.u_char_counts.data.len == 0:
-      instancedEntity.uniforms.u_char_counts.data.add(1)
-    else:
-      instancedEntity.uniforms.u_char_counts.data[0] += 1
-    instancedEntity.uniforms.u_char_counts.disable = false
+    instancedEntity.add(e)
+    instancedEntity.uniforms.u_char_counts.data[lineNum] += 1
     x += bakedChar.xadvance
     i += 1
 
