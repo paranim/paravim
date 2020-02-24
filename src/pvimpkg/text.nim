@@ -10,8 +10,8 @@ const
   instancedTextFragmentShader = staticRead("shaders/fragment.glsl")
 
 let
-  monoFont* = initFont(ttf = monoFontRaw, fontHeight = 64, firstChar = 32, bitmapWidth = 512, bitmapHeight = 512, charCount = 2048)
-  variFont* = initFont(ttf = variFontRaw, fontHeight = 64, firstChar = 32, bitmapWidth = 512, bitmapHeight = 512, charCount = 2048)
+  monoFont* = initFont(ttf = monoFontRaw, fontHeight = 128, firstChar = 32, bitmapWidth = 1024, bitmapHeight = 1024, charCount = 2048)
+  variFont* = initFont(ttf = variFontRaw, fontHeight = 128, firstChar = 32, bitmapWidth = 1024, bitmapHeight = 1024, charCount = 2048)
 
 type
   ParavimTextEntityUniforms = tuple[
