@@ -15,3 +15,4 @@ bin           = @["pvim"]
 requires "nim >= 1.0.6"
 requires "paranim >= 0.1.0"
 requires "pararules >= 0.1.0"
+requires "https://github.com/paranim/paratext#569bc18"

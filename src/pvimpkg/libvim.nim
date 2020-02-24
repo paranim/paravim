@@ -53,7 +53,7 @@ proc vimBufferGetCurrent*(): buf_T {.cdecl, dynlib: getLib(), importc: "vimBuffe
 #proc vimBufferGetId*(buf: buf_T): cint
 #proc vimBufferGetLastChangedTick*(buf: buf_T): clong
 proc vimBufferGetLine*(buf: buf_T; lnum: linenr_T): ptr char_u {.cdecl, dynlib: getLib(), importc: "vimBufferGetLine".}
-#proc vimBufferGetLineCount*(buf: buf_T): csize
+proc vimBufferGetLineCount*(buf: buf_T): csize {.cdecl, dynlib: getLib(), importc: "vimBufferGetLineCount".}
 ##
 ##  vimBufferSetLines
 ##
