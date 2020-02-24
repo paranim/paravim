@@ -12,7 +12,7 @@ type
   Attr* = enum
     WindowWidth, WindowHeight,
     PressedKeys, MouseClick, MouseX, MouseY,
-    Lines,
+    Lines, FontSize,
   IntSet = HashSet[int]
   CStrings = seq[cstring]
 
@@ -24,6 +24,7 @@ schema Fact(Id, Attr):
   MouseX: float
   MouseY: float
   Lines: CStrings
+  FontSize: float
 
 let rules =
   ruleset:
@@ -38,6 +39,9 @@ let rules =
     rule getLines(Fact):
       what:
         (Global, Lines, lines)
+    rule getFont(Fact):
+      what:
+        (Global, FontSize, fontSize)
 
 var session* = initSession(Fact)
 
@@ -78,10 +82,12 @@ proc init*(game: var RootGame) =
 
   # set initial values
   session.insert(Global, PressedKeys, initHashSet[int]())
+  session.insert(Global, FontSize, 1/4)
 
 proc tick*(game: RootGame) =
   let (windowWidth, windowHeight) = session.query(rules.getWindow)
   let (lines) = session.query(rules.getLines)
+  let (fontSize) = session.query(rules.getFont)
 
   glClearColor(173/255, 216/255, 230/255, 1f)
   glClear(GL_COLOR_BUFFER_BIT)
@@ -91,5 +97,6 @@ proc tick*(game: RootGame) =
     var e = deepCopy(text.monoEntity)
     text.add(e, text.baseMonoEntity, text.monoFont, lines[i])
     e.project(float(windowWidth), float(windowHeight))
-    e.translate(0f, i.cfloat * text.monoFont.height)
+    e.translate(0f, i.cfloat * text.monoFont.height * fontSize)
+    e.scale(fontSize, fontSize)
     render(game, e)
