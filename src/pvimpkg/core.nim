@@ -12,7 +12,8 @@ type
   Attr* = enum
     WindowWidth, WindowHeight,
     PressedKeys, MouseClick, MouseX, MouseY,
-    Lines, FontSize,
+    FontSize, CurrentBufferId,
+    BufferId, Lines, Path,
   IntSet = HashSet[int]
   CStrings = seq[cstring]
 
@@ -23,8 +24,11 @@ schema Fact(Id, Attr):
   MouseClick: int
   MouseX: float
   MouseY: float
-  Lines: CStrings
   FontSize: float
+  CurrentBufferId: int
+  BufferId: int
+  Lines: CStrings
+  Path: cstring
 
 let rules =
   ruleset:
@@ -36,14 +40,18 @@ let rules =
     rule getKeys(Fact):
       what:
         (Global, PressedKeys, keys)
-    rule getLines(Fact):
-      what:
-        (Global, Lines, lines)
     rule getFont(Fact):
       what:
         (Global, FontSize, fontSize)
+    rule getCurrentBuffer(Fact):
+      what:
+        (Global, CurrentBufferId, cb)
+        (id, BufferId, cb)
+        (id, Lines, lines)
 
-var session* = initSession(Fact)
+var
+  session* = initSession(Fact)
+  nextId* = Id.high.ord + 1
 
 for r in rules.fields:
   session.add(r)
@@ -83,19 +91,22 @@ proc init*(game: var RootGame) =
   # set initial values
   session.insert(Global, PressedKeys, initHashSet[int]())
   session.insert(Global, FontSize, 1/4)
+  session.insert(Global, CurrentBufferId, -1)
 
 proc tick*(game: RootGame) =
   let (windowWidth, windowHeight) = session.query(rules.getWindow)
-  let (lines) = session.query(rules.getLines)
   let (fontSize) = session.query(rules.getFont)
+  let currentBufferIndex = session.find(rules.getCurrentBuffer)
 
   glClearColor(173/255, 216/255, 230/255, 1f)
   glClear(GL_COLOR_BUFFER_BIT)
   glViewport(0, 0, int32(windowWidth), int32(windowHeight))
 
-  var e = deepCopy(text.monoEntity)
-  for i in 0 ..< lines.len:
-    text.addLine(e, text.baseMonoEntity, text.monoFont, lines[i])
-  e.project(float(windowWidth), float(windowHeight))
-  e.scale(fontSize, fontSize)
-  render(game, e)
+  if currentBufferIndex >= 0:
+    let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
+    var e = deepCopy(text.monoEntity)
+    for i in 0 ..< currentBuffer.lines.len:
+      text.addLine(e, text.baseMonoEntity, text.monoFont, currentBuffer.lines[i])
+    e.project(float(windowWidth), float(windowHeight))
+    e.scale(fontSize, fontSize)
+    render(game, e)

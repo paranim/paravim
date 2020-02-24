@@ -48,9 +48,9 @@ proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): buf_T {.c
 #proc vimBufferGetById*(id: cint): buf_T
 proc vimBufferGetCurrent*(): buf_T {.cdecl, dynlib: getLib(), importc: "vimBufferGetCurrent".}
 #proc vimBufferSetCurrent*(buf: buf_T)
-#proc vimBufferGetFilename*(buf: buf_T): ptr char_u
+proc vimBufferGetFilename*(buf: buf_T): ptr char_u {.cdecl, dynlib: getLib(), importc: "vimBufferGetFilename".}
 #proc vimBufferGetFiletype*(buf: buf_T): ptr char_u
-#proc vimBufferGetId*(buf: buf_T): cint
+proc vimBufferGetId*(buf: buf_T): cint {.cdecl, dynlib: getLib(), importc: "vimBufferGetId".}
 #proc vimBufferGetLastChangedTick*(buf: buf_T): clong
 proc vimBufferGetLine*(buf: buf_T; lnum: linenr_T): ptr char_u {.cdecl, dynlib: getLib(), importc: "vimBufferGetLine".}
 proc vimBufferGetLineCount*(buf: buf_T): csize {.cdecl, dynlib: getLib(), importc: "vimBufferGetLineCount".}
