@@ -6,13 +6,22 @@ import paratext, paratext/gl/text
 const
   monoFontRaw = staticRead("../assets/ttf/FiraCode-Regular.ttf")
   variFontRaw = staticRead("../assets/ttf/Roboto-Regular.ttf")
+  instancedTextVertexShader = staticRead("shaders/vertex.glsl")
+  instancedTextFragmentShader = staticRead("shaders/fragment.glsl")
 
 let
   monoFont* = initFont(ttf = monoFontRaw, fontHeight = 64, firstChar = 32, bitmapWidth = 512, bitmapHeight = 512, charCount = 2048)
   variFont* = initFont(ttf = variFontRaw, fontHeight = 64, firstChar = 32, bitmapWidth = 512, bitmapHeight = 512, charCount = 2048)
 
 type
-  ParavimTextEntityUniforms = tuple[u_matrix: Uniform[Mat3x3[GLfloat]], u_image: Uniform[Texture[GLubyte]]]
+  ParavimTextEntityUniforms = tuple[
+    u_matrix: Uniform[Mat3x3[GLfloat]],
+    u_image: Uniform[Texture[GLubyte]],
+    u_char_counts: Uniform[seq[GLint]],
+    u_start_line: Uniform[GLint],
+    u_font_height: Uniform[GLfloat],
+    u_alpha: Uniform[GLfloat]
+  ]
   ParavimTextEntityAttributes = tuple[
     a_position: Attribute[GLfloat],
     a_translate_matrix: Attribute[GLfloat],
@@ -23,52 +32,14 @@ type
   ParavimTextEntity* = object of InstancedEntity[ParavimTextEntityUniforms, ParavimTextEntityAttributes]
   UncompiledParavimTextEntity* = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
 
-const instancedTextVertexShader =
-  """
-  #version 410
-  uniform mat3 u_matrix;
-  in vec2 a_position;
-  in vec4 a_color;
-  in mat3 a_translate_matrix;
-  in mat3 a_texture_matrix;
-  in mat3 a_scale_matrix;
-  out vec2 v_tex_coord;
-  out vec4 v_color;
-  void main()
-  {
-    gl_Position = vec4((u_matrix * a_translate_matrix * a_scale_matrix * vec3(a_position, 1)).xy, 0, 1);
-    v_tex_coord = (a_texture_matrix * vec3(a_position, 1)).xy;
-    v_color = a_color;
-  }
-  """
-
-const instancedTextFragmentShader =
-  """
-  #version 410
-  precision mediump float;
-  uniform sampler2D u_image;
-  in vec2 v_tex_coord;
-  in vec4 v_color;
-  out vec4 o_color;
-  void main()
-  {
-    o_color = texture(u_image, v_tex_coord);
-    if (o_color.rgb == vec3(0.0, 0.0, 0.0))
-    {
-      discard;
-    }
-    else
-    {
-      o_color = v_color;
-    }
-  }
-  """
-
-proc initInstancedEntity*(entity: UncompiledTextEntity): UncompiledParavimTextEntity =
+proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledParavimTextEntity =
   result.vertexSource = instancedTextVertexShader
   result.fragmentSource = instancedTextFragmentShader
   result.uniforms.u_matrix = entity.uniforms.u_matrix
   result.uniforms.u_image = entity.uniforms.u_image
+  result.uniforms.u_char_counts.disable = true
+  result.uniforms.u_font_height.data = font.height
+  result.uniforms.u_alpha.data = 1.0
   result.attributes.a_translate_matrix = Attribute[GLfloat](disable: true, divisor: 1, size: 3, iter: 3)
   new(result.attributes.a_translate_matrix.data)
   result.attributes.a_scale_matrix = Attribute[GLfloat](disable: true, divisor: 1, size: 3, iter: 3)
@@ -167,12 +138,17 @@ proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, 
       instancedEntity.add(e)
     else:
       instancedEntity[i] = e
+    if instancedEntity.uniforms.u_char_counts.data.len == 0:
+      instancedEntity.uniforms.u_char_counts.data.add(1)
+    else:
+      instancedEntity.uniforms.u_char_counts.data[0] += 1
+    instancedEntity.uniforms.u_char_counts.disable = false
     x += bakedChar.xadvance
     i += 1
 
 proc init*(game: var RootGame) =
   baseMonoEntity = initTextEntity(monoFont)
   let
-    uncompiledMonoEntity = initInstancedEntity(baseMonoEntity)
+    uncompiledMonoEntity = initInstancedEntity(baseMonoEntity, monoFont)
     compiledMonoEntity = compile(game, uncompiledMonoEntity)
   monoEntity = deepCopy(compiledMonoEntity)
