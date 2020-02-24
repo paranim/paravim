@@ -1,4 +1,5 @@
 import nimgl/glfw
+from paranim/gl import nil
 import pvimpkg/core
 from pvimpkg/vim import nil
 
@@ -48,15 +49,10 @@ when isMainModule:
   w.getFramebufferSize(width.addr, height.addr)
   w.frameSizeCallback(width, height)
 
-  var game = Game()
+  var game = gl.RootGame()
   game.init()
 
-  game.totalTime = glfwGetTime()
-
   while not w.windowShouldClose:
-    let ts = glfwGetTime()
-    game.deltaTime = ts - game.totalTime
-    game.totalTime = ts
     game.tick()
     w.swapBuffers()
     glfwPollEvents()
