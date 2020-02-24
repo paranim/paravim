@@ -11,16 +11,14 @@ type
     Global
   Attr* = enum
     WindowWidth, WindowHeight,
-    PressedKeys, MouseClick, MouseX, MouseY,
+    MouseClick, MouseX, MouseY,
     FontSize, CurrentBufferId,
     BufferId, Lines, Path,
-  IntSet = HashSet[int]
   CStrings = seq[cstring]
 
 schema Fact(Id, Attr):
   WindowWidth: int
   WindowHeight: int
-  PressedKeys: IntSet
   MouseClick: int
   MouseX: float
   MouseY: float
@@ -37,9 +35,6 @@ let rules =
       what:
         (Global, WindowWidth, windowWidth)
         (Global, WindowHeight, windowHeight)
-    rule getKeys(Fact):
-      what:
-        (Global, PressedKeys, keys)
     rule getFont(Fact):
       what:
         (Global, FontSize, fontSize)
@@ -55,16 +50,6 @@ var
 
 for r in rules.fields:
   session.add(r)
-
-proc keyPressed*(key: int) =
-  var (keys) = session.query(rules.getKeys)
-  keys.incl(key)
-  session.insert(Global, PressedKeys, keys)
-
-proc keyReleased*(key: int) =
-  var (keys) = session.query(rules.getKeys)
-  keys.excl(key)
-  session.insert(Global, PressedKeys, keys)
 
 proc mouseClicked*(button: int) =
   session.insert(Global, MouseClick, button)
@@ -89,7 +74,6 @@ proc init*(game: var RootGame) =
   text.init(game)
 
   # set initial values
-  session.insert(Global, PressedKeys, initHashSet[int]())
   session.insert(Global, FontSize, 1/4)
   session.insert(Global, CurrentBufferId, -1)
 

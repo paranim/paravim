@@ -1,6 +1,9 @@
 import libvim, structs, core
 from os import nil
 
+proc onInput*(input: string) =
+  echo input
+
 proc onBufEnter(buf: buf_T) =
   let
     id = vimBufferGetId(buf)

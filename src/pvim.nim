@@ -2,6 +2,22 @@ import nimgl/glfw
 from paranim/gl import nil
 import pvimpkg/core
 from pvimpkg/vim import nil
+import tables
+
+const glfwToVim =
+  {GLFWKey.BACKSPACE: "BS",
+   GLFWKey.DELETE: "Del",
+   GLFWKey.TAB: "Tab",
+   GLFWKey.ENTER: "Enter",
+   GLFWKey.ESCAPE: "Esc",
+   GLFWKey.UP: "Up",
+   GLFWKey.DOWN: "Down",
+   GLFWKey.LEFT: "Left",
+   GLFWKey.RIGHT: "Right",
+   GLFWKey.HOME: "Home",
+   GLFWKey.END: "End",
+   GLFWKey.PAGE_UP: "PageUp",
+   GLFWKey.PAGE_DOWN: "PageDown"}.toTable
 
 proc keyCallback(window: GLFWWindow, key: int32, scancode: int32,
                  action: int32, mods: int32): void {.cdecl.} =
@@ -9,9 +25,11 @@ proc keyCallback(window: GLFWWindow, key: int32, scancode: int32,
     if key == GLFWKey.Escape:
       window.setWindowShouldClose(true)
     else:
-      keyPressed(key)
-  elif action == GLFW_RELEASE:
-    keyReleased(key)
+      if glfwToVim.hasKey(key):
+        vim.onInput("<" & glfwToVim[key] & ">")
+
+proc charCallback(window: GLFWWindow, codepoint: uint32) {.cdecl.} =
+  vim.onInput("" & char(codepoint))
 
 proc mouseButtonCallback(window: GLFWWindow, button: int32, action: int32, mods: int32): void {.cdecl.} =
   if action == GLFWPress:
@@ -42,6 +60,7 @@ when isMainModule:
   glfwSwapInterval(1)
 
   discard w.setKeyCallback(keyCallback)
+  discard w.setCharCallback(charCallback)
   discard w.setMouseButtonCallback(mouseButtonCallback)
   discard w.setCursorPosCallback(cursorPosCallback)
   discard w.setFramebufferSizeCallback(frameSizeCallback)
