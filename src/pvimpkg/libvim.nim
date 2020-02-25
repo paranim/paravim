@@ -86,8 +86,8 @@ proc vimSetAutoCommandCallback*(autoCommandDispatch: AutoCommandCallback) {.cdec
 ##  Cursor Methods
 ## *
 
-#proc vimCursorGetColumn*(): colnr_T
-#proc vimCursorGetLine*(): linenr_T
+proc vimCursorGetColumn*(): colnr_T {.cdecl, dynlib: getLib(), importc: "vimCursorGetColumn".}
+proc vimCursorGetLine*(): linenr_T {.cdecl, dynlib: getLib(), importc: "vimCursorGetLine".}
 #proc vimCursorGetPosition*(): pos_T
 #proc vimCursorSetPosition*(pos: pos_T)
 ## **
@@ -107,7 +107,7 @@ proc vimSetAutoCommandCallback*(autoCommandDispatch: AutoCommandCallback) {.cdec
 ##  User Input
 ## *
 
-#proc vimInput*(input: ptr char_u)
+proc vimInput*(input: cstring) {.cdecl, dynlib: getLib(), importc: "vimInput".}
 #proc vimExecute*(cmd: ptr char_u)
 ## **
 ##  Messages

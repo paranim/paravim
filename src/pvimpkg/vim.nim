@@ -2,7 +2,11 @@ import libvim, structs, core
 from os import nil
 
 proc onInput*(input: string) =
-  echo input
+  vimInput(input)
+  let id = getCurrentBufferId()
+  if id >= 0:
+    session.insert(id, CursorLine, vimCursorGetLine() - 1)
+    session.insert(id, CursorColumn, vimCursorGetColumn())
 
 proc onBufEnter(buf: buf_T) =
   let
@@ -18,6 +22,8 @@ proc onBufEnter(buf: buf_T) =
     session.insert(nextId, BufferId, id)
     session.insert(nextId, Path, cstring(path))
     session.insert(nextId, Lines, lines)
+    session.insert(nextId, CursorLine, vimCursorGetLine() - 1)
+    session.insert(nextId, CursorColumn, vimCursorGetColumn())
     nextId += 1
 
 proc onAutoCommand(a1: event_T; buf: buf_T) {.cdecl.} =

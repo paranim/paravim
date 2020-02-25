@@ -1,10 +1,12 @@
 import nimgl/opengl
 from nimgl/glfw import GLFWKey
 import paranim/gl, paranim/gl/entities
+from paranim/primitives import nil
 import pararules
 from text import nil
 import sets
 from math import `mod`
+from glm import nil
 
 type
   Id* = enum
@@ -14,6 +16,7 @@ type
     MouseClick, MouseX, MouseY,
     FontSize, CurrentBufferId,
     BufferId, Lines, Path,
+    CursorLine, CursorColumn,
   CStrings = seq[cstring]
 
 schema Fact(Id, Attr):
@@ -27,6 +30,8 @@ schema Fact(Id, Attr):
   BufferId: int
   Lines: CStrings
   Path: cstring
+  CursorLine: int
+  CursorColumn: int
 
 let rules =
   ruleset:
@@ -43,10 +48,20 @@ let rules =
         (Global, CurrentBufferId, cb)
         (id, BufferId, cb)
         (id, Lines, lines)
+        (id, CursorLine, cursorLine)
+        (id, CursorColumn, cursorColumn)
 
 var
   session* = initSession(Fact)
   nextId* = Id.high.ord + 1
+  cursorEntity: TwoDEntity
+
+proc getCurrentBufferId*(): int =
+  let index = session.find(rules.getCurrentBuffer)
+  if index >= 0:
+    session.get(rules.getCurrentBuffer, index).id
+  else:
+    -1
 
 for r in rules.fields:
   session.add(r)
@@ -73,6 +88,9 @@ proc init*(game: var RootGame) =
   # init fonts
   text.init(game)
 
+  # init cursor
+  cursorEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
+
   # set initial values
   session.insert(Global, FontSize, 1/4)
   session.insert(Global, CurrentBufferId, -1)
@@ -94,3 +112,11 @@ proc tick*(game: RootGame) =
     e.project(float(windowWidth), float(windowHeight))
     e.scale(fontSize, fontSize)
     render(game, e)
+
+    let fontWidth = text.monoFont.chars[115 - text.monoFont.firstChar].xadvance
+    var e2 = cursorEntity
+    e2.project(float(windowWidth), float(windowHeight))
+    e2.scale(fontWidth * fontSize, text.monoFont.height * fontSize)
+    e2.translate(currentBuffer.cursorColumn.GLfloat, currentBuffer.cursorLine.GLfloat)
+    e2.color(glm.vec4(GLfloat(112/255), GLfloat(128/255), GLfloat(144/255), GLfloat(0.9)))
+    render(game, e2)
