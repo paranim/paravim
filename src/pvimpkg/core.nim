@@ -2,6 +2,7 @@ import nimgl/opengl
 from nimgl/glfw import GLFWKey
 import paranim/gl, paranim/gl/entities
 from paranim/primitives import nil
+from paranim/math as pmath import translate
 import pararules
 from text import nil
 from buffers import BufferUpdateTuple
@@ -20,10 +21,9 @@ type
   Attr* = enum
     WindowWidth, WindowHeight,
     MouseClick, MouseX, MouseY,
-    FontSize, CurrentBufferId,
+    FontSize, CurrentBufferId, BufferUpdate,
     BufferId, Lines, Path,
-    CursorLine, CursorColumn,
-    BufferUpdate,
+    CursorLine, CursorColumn, ScrollX, ScrollY,
   Strings = seq[string]
 
 schema Fact(Id, Attr):
@@ -34,16 +34,17 @@ schema Fact(Id, Attr):
   MouseY: float
   FontSize: float
   CurrentBufferId: int
+  BufferUpdate: BufferUpdateTuple
   BufferId: int
   Lines: Strings
   Path: string
   CursorLine: int
   CursorColumn: int
-  BufferUpdate: BufferUpdateTuple
+  ScrollX: float
+  ScrollY: float
 
 let rules =
   ruleset:
-    # getters
     rule getWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)
@@ -58,7 +59,8 @@ let rules =
         (id, Lines, lines)
         (id, CursorLine, cursorLine)
         (id, CursorColumn, cursorColumn)
-    # buffer updates
+        (id, ScrollX, scrollX)
+        (id, ScrollY, scrollY)
     rule onBufferUpdate(Fact):
       what:
         (Global, BufferUpdate, bu)
@@ -69,6 +71,40 @@ let rules =
       then:
         session.retract(Global, BufferUpdate, bu)
         session.insert(id, Lines, buffers.updateLines(lines, bu))
+    rule updateScrollX(Fact):
+      what:
+        (Global, WindowWidth, windowWidth)
+        (Global, FontSize, fontSize)
+        (id, CursorColumn, cursorColumn)
+        (id, ScrollX, scrollX, then = false)
+      then:
+        let
+          fontWidth = text.monoFont.chars[0].xadvance * fontSize
+          cursorLeft = cursorColumn.float * fontWidth
+          cursorRight = cursorLeft + fontWidth
+          textWidth = windowWidth.float
+          scrollRight = scrollX + textWidth
+        if cursorLeft < scrollX:
+          session.insert(id, ScrollX, cursorLeft)
+        elif cursorRight > scrollRight:
+          session.insert(id, ScrollX, cursorRight - textWidth)
+    rule updateScrollY(Fact):
+      what:
+        (Global, WindowHeight, windowHeight)
+        (Global, FontSize, fontSize)
+        (id, CursorLine, cursorLine)
+        (id, ScrollY, scrollY, then = false)
+      then:
+        let
+          fontHeight = text.monoFont.height * fontSize
+          cursorTop = cursorLine.float * fontHeight
+          cursorBottom = cursorTop + fontHeight
+          textHeight = windowHeight.float
+          scrollBottom = scrollY + textHeight
+        if cursorTop < scrollY:
+          session.insert(id, ScrollY, cursorTop)
+        elif cursorBottom > scrollBottom and scrollBottom > 0:
+          session.insert(id, ScrollY, cursorBottom - textHeight)
 
 var
   session* = initSession(Fact)
@@ -125,11 +161,14 @@ proc tick*(game: RootGame) =
 
   if currentBufferIndex >= 0:
     let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
+    var camera = glm.mat3f(1)
+    camera.translate(currentBuffer.scrollX, currentBuffer.scrollY)
 
     block:
       let fontWidth = text.monoFont.chars[0].xadvance
       var e = cursorEntity
       e.project(float(windowWidth), float(windowHeight))
+      e.invert(camera)
       e.scale(fontWidth * fontSize, text.monoFont.height * fontSize)
       e.translate(currentBuffer.cursorColumn.GLfloat, currentBuffer.cursorLine.GLfloat)
       e.color(cursorColor)
@@ -140,5 +179,6 @@ proc tick*(game: RootGame) =
       for i in 0 ..< currentBuffer.lines.len:
         text.addLine(e, text.baseMonoEntity, text.monoFont, textColor, currentBuffer.lines[i])
       e.project(float(windowWidth), float(windowHeight))
+      e.invert(camera)
       e.scale(fontSize, fontSize)
       render(game, e)

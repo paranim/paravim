@@ -24,6 +24,8 @@ proc onBufEnter(buf: buf_T) =
     session.insert(nextId, Lines, lines)
     session.insert(nextId, CursorLine, vimCursorGetLine() - 1)
     session.insert(nextId, CursorColumn, vimCursorGetColumn())
+    session.insert(nextId, ScrollX, 0f)
+    session.insert(nextId, ScrollY, 0f)
     nextId += 1
 
 proc onAutoCommand(a1: event_T; buf: buf_T) {.cdecl.} =
