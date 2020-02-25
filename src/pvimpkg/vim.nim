@@ -3,6 +3,7 @@ from os import nil
 
 proc onInput*(input: string) =
   vimInput(input)
+  session.insert(Global, VimMode, vimGetMode())
   let id = getCurrentSessionId()
   if id >= 0:
     session.insert(id, CursorLine, vimCursorGetLine() - 1)
@@ -70,6 +71,8 @@ proc init*(quitCallback: QuitCallback) =
   vimExecute("set expandtab")
   vimExecute("set hlsearch")
   vimExecute("filetype plugin index on")
+
+  session.insert(Global, VimMode, vimGetMode())
 
   #let params = os.commandLineParams()
   #for fname in params:

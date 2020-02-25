@@ -25,7 +25,7 @@ type
   Attr* = enum
     WindowWidth, WindowHeight,
     MouseClick, MouseX, MouseY,
-    FontSize, CurrentBufferId, BufferUpdate,
+    FontSize, CurrentBufferId, BufferUpdate, VimMode,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
     LineCount,
@@ -40,6 +40,7 @@ schema Fact(Id, Attr):
   FontSize: float
   CurrentBufferId: int
   BufferUpdate: BufferUpdateTuple
+  VimMode: int
   BufferId: int
   Lines: Strings
   Path: string
@@ -58,6 +59,9 @@ let rules =
     rule getFont(Fact):
       what:
         (Global, FontSize, fontSize)
+    rule getMode(Fact):
+      what:
+        (Global, VimMode, vimMode)
     rule getCurrentBuffer(Fact):
       what:
         (Global, CurrentBufferId, cb)
@@ -205,6 +209,7 @@ proc init*(game: var RootGame) =
 proc tick*(game: RootGame) =
   let (windowWidth, windowHeight) = session.query(rules.getWindow)
   let (fontSize) = session.query(rules.getFont)
+  let (vimMode) = session.query(rules.getMode)
   let currentBufferIndex = session.find(rules.getCurrentBuffer)
 
   glClearColor(bgColor.arr[0], bgColor.arr[1], bgColor.arr[2], bgColor.arr[3])
@@ -224,8 +229,8 @@ proc tick*(game: RootGame) =
       var e = cursorEntity
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
-      e.scale(textWidth, textHeight)
-      e.translate(currentBuffer.cursorColumn.GLfloat, currentBuffer.cursorLine.GLfloat)
+      e.translate(currentBuffer.cursorColumn.GLfloat * textWidth, currentBuffer.cursorLine.GLfloat * textHeight)
+      e.scale(if vimMode == libvim.Insert.ord: textWidth / 4 else: textWidth, textHeight)
       e.color(cursorColor)
       render(game, e)
 

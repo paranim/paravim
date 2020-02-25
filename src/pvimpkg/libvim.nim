@@ -14,6 +14,16 @@ proc getLib(): string =
   else:
     getAppDir().joinPath("pvimpkg").joinPath("libvim." & extension)
 
+type
+  Mode* = enum
+    Normal = 0x01,
+    Visual = 0x02
+    OpPending = 0x04,
+    CommandLine = 0x08,
+    Insert = 0x10,
+    Replace = 0x50,
+    NormalBusy = 0x100 + 0x01,
+
 ##  libvim.c
 ##
 ##  vimInit
@@ -225,7 +235,7 @@ proc vimWindowSetHeight*(height: cint) {.cdecl, dynlib: getLib(), importc: "vimW
 ## *
 
 #proc vimSetClipboardGetCallback*(callback: ClipboardGetCallback)
-#proc vimGetMode*(): cint
+proc vimGetMode*(): cint {.cdecl, dynlib: getLib(), importc: "vimGetMode".}
 #proc vimSetYankCallback*(callback: YankCallback)
 ##  Callbacks for when the `:intro` and `:version` commands are used
 ##
