@@ -3,8 +3,9 @@ from paranim/gl import nil
 import pvimpkg/core
 from pvimpkg/vim import nil
 import tables
+import bitops
 
-const glfwToVim =
+const glfwToVimSpecials =
   {GLFWKey.BACKSPACE: "BS",
    GLFWKey.DELETE: "Del",
    GLFWKey.TAB: "Tab",
@@ -19,11 +20,26 @@ const glfwToVim =
    GLFWKey.PAGE_UP: "PageUp",
    GLFWKey.PAGE_DOWN: "PageDown"}.toTable
 
+const glfwToVimChars =
+  {GLFWKey.D: "D",
+   GLFWKey.H: "H",
+   GLFWKey.J: "J",
+   GLFWKey.M: "M",
+   GLFWKey.P: "P",
+   GLFWKey.R: "R",
+   GLFWKey.U: "U"}.toTable
+
 proc keyCallback(window: GLFWWindow, key: int32, scancode: int32,
                  action: int32, mods: int32) {.cdecl.} =
   if action == GLFW_PRESS:
-    if glfwToVim.hasKey(key):
-      vim.onInput("<" & glfwToVim[key] & ">")
+    let
+      isControl = 0 != bitand(mods, GLFW_MOD_CONTROL)
+      isShift = 0 != bitand(mods, GLFW_MOD_SHIFT)
+    if isControl:
+      if glfwToVimChars.hasKey(key):
+        vim.onInput("<C-" & (if isShift: "S-" else: "") & glfwToVimChars[key] & ">")
+    elif glfwToVimSpecials.hasKey(key):
+      vim.onInput("<" & glfwToVimSpecials[key] & ">")
 
 proc charCallback(window: GLFWWindow, codepoint: uint32) {.cdecl.} =
   vim.onInput("" & char(codepoint))
