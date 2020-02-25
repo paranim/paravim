@@ -5,7 +5,11 @@ proc updateLines*(lines: seq[string], bu: BufferUpdateTuple): seq[string] =
   if bu.lineCountChange == 0:
     result = lines
     for i in 0 ..< bu.lines.len:
-      result[i + bu.firstLine] = bu.lines[i]
+      let lineNum = i + bu.firstLine
+      if result.len == lineNum:
+        result.add(bu.lines[i])
+      else:
+        result[lineNum] = bu.lines[i]
   else:
     let linesToRemove =
       if bu.lineCountChange < 0:
@@ -15,5 +19,6 @@ proc updateLines*(lines: seq[string], bu: BufferUpdateTuple): seq[string] =
     result = @[]
     result.add(lines[0 ..< bu.firstLine])
     result.add(bu.lines)
-    result.add(lines[bu.firstLine + linesToRemove ..< lines.len])
+    if lines.len > 0: # see test: "delete all lines"
+      result.add(lines[bu.firstLine + linesToRemove ..< lines.len])
 

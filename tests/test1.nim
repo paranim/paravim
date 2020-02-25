@@ -7,8 +7,9 @@
 
 import unittest
 import pvimpkg/libvim
+from pvimpkg/vim import nil
 
-vimInit(0, nil)
+vim.init(nil)
 
 test "set the tab size":
   vimOptionSetTabSize(2)
@@ -17,3 +18,19 @@ test "set the tab size":
 test "read a line":
   let buf = vimBufferOpen("tests/hello.txt", 1, 0)
   check vimBufferGetLine(buf, 1) == "Hello, world!"
+  vim.onInput("b")
+  vim.onInput("d")
+
+test "delete all lines":
+  let buf = vimBufferOpen("tests/hello.txt", 1, 0)
+  check vimBufferGetLine(buf, 1) == "Hello, world!"
+  vim.onInput("g")
+  vim.onInput("g")
+  vim.onInput("d")
+  vim.onInput("G")
+  check vimBufferGetLine(buf, 1) == ""
+  vim.onInput("u")
+  vim.onInput("u") # why do i have to do this twice?
+  check vimBufferGetLine(buf, 1) == "Hello, world!"
+  vim.onInput("b")
+  vim.onInput("d")
