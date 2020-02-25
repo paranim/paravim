@@ -74,4 +74,4 @@ proc init*(quitCallback: QuitCallback) =
   #let params = os.commandLineParams()
   #for fname in params:
   #  discard vimBufferOpen(fname, 1, 0)
-  discard vimBufferOpen("tests/hello.txt", 1, 0)
+  discard vimBufferOpen("src/pvim.nim", 1, 0)

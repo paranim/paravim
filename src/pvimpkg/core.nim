@@ -9,6 +9,7 @@ from buffers import BufferUpdateTuple
 import sets
 from math import `mod`
 from glm import nil
+from libvim import nil
 
 const
   bgColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
@@ -76,6 +77,17 @@ let rules =
       then:
         session.retract(Global, BufferUpdate, bu)
         session.insert(id, Lines, buffers.updateLines(lines, bu))
+    rule onWindowResize(Fact):
+      what:
+        (Global, WindowWidth, windowWidth)
+        (Global, WindowHeight, windowHeight)
+        (Global, FontSize, fontSize)
+      then:
+        let
+          textWidth = text.monoFont.chars[0].xadvance * fontSize
+          textHeight = text.monoFont.height * fontSize
+        libvim.vimWindowSetWidth(int32(windowWidth.float / textWidth))
+        libvim.vimWindowSetHeight(int32(windowHeight.float / textHeight))
     rule updateLineCount(Fact):
       what:
         (id, Lines, lines)
@@ -145,14 +157,14 @@ proc getSessionId*(bufferId: int): int =
 for r in rules.fields:
   session.add(r)
 
-proc mouseClicked*(button: int) =
+proc onMouseClick*(button: int) =
   session.insert(Global, MouseClick, button)
 
-proc mouseMoved*(xpos: float, ypos: float) =
+proc onMouseMove*(xpos: float, ypos: float) =
   session.insert(Global, MouseX, xpos)
   session.insert(Global, MouseY, ypos)
 
-proc windowResized*(width: int, height: int) =
+proc onWindowResize*(width: int, height: int) =
   if width == 0 or height == 0:
     return
   session.insert(Global, WindowWidth, width)

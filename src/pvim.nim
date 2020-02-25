@@ -46,13 +46,13 @@ proc charCallback(window: GLFWWindow, codepoint: uint32) {.cdecl.} =
 
 proc mouseButtonCallback(window: GLFWWindow, button: int32, action: int32, mods: int32) {.cdecl.} =
   if action == GLFWPress:
-    mouseClicked(button)
+    onMouseClick(button)
 
 proc cursorPosCallback(window: GLFWWindow, xpos: float64, ypos: float64) {.cdecl.} =
-  mouseMoved(xpos, ypos)
+  onMouseMove(xpos, ypos)
 
 proc frameSizeCallback(window: GLFWWindow, width: int32, height: int32) {.cdecl.} =
-  windowResized(width, height)
+  onWindowResize(width, height)
 
 when isMainModule:
   doAssert glfwInit()

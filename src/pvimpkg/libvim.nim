@@ -215,8 +215,8 @@ proc vimOptionGetTabSize*(): cint {.cdecl, dynlib: getLib(), importc: "vimOption
 #proc vimWindowGetHeight*(): cint
 #proc vimWindowGetTopLine*(): cint
 #proc vimWindowGetLeftColumn*(): cint
-#proc vimWindowSetWidth*(width: cint)
-#proc vimWindowSetHeight*(height: cint)
+proc vimWindowSetWidth*(width: cint) {.cdecl, dynlib: getLib(), importc: "vimWindowSetWidth".}
+proc vimWindowSetHeight*(height: cint) {.cdecl, dynlib: getLib(), importc: "vimWindowSetHeight".}
 #proc vimWindowSetTopLeft*(top: cint; left: cint)
 #proc vimSetWindowSplitCallback*(callback: WindowSplitCallback)
 #proc vimSetWindowMovementCallback*(callback: WindowMovementCallback)
