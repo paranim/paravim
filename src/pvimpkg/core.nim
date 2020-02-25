@@ -4,6 +4,7 @@ import paranim/gl, paranim/gl/entities
 from paranim/primitives import nil
 import pararules
 from text import nil
+from buffers import BufferUpdateTuple
 import sets
 from math import `mod`
 from glm import nil
@@ -19,7 +20,6 @@ type
     CursorLine, CursorColumn,
     BufferUpdate,
   Strings = seq[string]
-  BufferUpdateTuple = tuple[bufferId: int, lines: seq[string], firstLine: int, lineCountChange: int]
 
 schema Fact(Id, Attr):
   WindowWidth: int
@@ -63,8 +63,7 @@ let rules =
         bufferId == bu.bufferId
       then:
         session.retract(Global, BufferUpdate, bu)
-        echo bu
-
+        session.insert(id, Lines, buffers.updateLines(lines, bu))
 
 var
   session* = initSession(Fact)
