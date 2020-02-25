@@ -61,6 +61,9 @@ let rules =
         (id, CursorColumn, cursorColumn)
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
+    rule getBuffer(Fact):
+      what:
+        (id, BufferId, bufferId)
     rule onBufferUpdate(Fact):
       what:
         (Global, BufferUpdate, bu)
@@ -111,10 +114,17 @@ var
   nextId* = Id.high.ord + 1
   cursorEntity: TwoDEntity
 
-proc getCurrentBufferId*(): int =
+proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
   if index >= 0:
     session.get(rules.getCurrentBuffer, index).id
+  else:
+    -1
+
+proc getSessionId*(bufferId: int): int =
+  let index = session.find(rules.getBuffer, bufferId = bufferId)
+  if index >= 0:
+    session.get(rules.getBuffer, index).id
   else:
     -1
 
@@ -148,7 +158,6 @@ proc init*(game: var RootGame) =
 
   # set initial values
   session.insert(Global, FontSize, 1/4)
-  session.insert(Global, CurrentBufferId, -1)
 
 proc tick*(game: RootGame) =
   let (windowWidth, windowHeight) = session.query(rules.getWindow)

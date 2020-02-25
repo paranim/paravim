@@ -3,35 +3,43 @@ from os import nil
 
 proc onInput*(input: string) =
   vimInput(input)
-  let id = getCurrentBufferId()
+  let id = getCurrentSessionId()
   if id >= 0:
     session.insert(id, CursorLine, vimCursorGetLine() - 1)
     session.insert(id, CursorColumn, vimCursorGetColumn())
 
 proc onBufEnter(buf: buf_T) =
   let
-    id = vimBufferGetId(buf)
+    bufferId = vimBufferGetId(buf)
     path = vimBufferGetFilename(buf)
     count = vimBufferGetLineCount(buf)
-  session.insert(Global, CurrentBufferId, id)
+  session.insert(Global, CurrentBufferId, bufferId)
+  var sessionId = getSessionId(bufferId)
   if path != nil:
-    var lines: seq[string]
-    for i in 0 ..< count:
-      let line = vimBufferGetLine(buf, linenr_T(i+1))
-      lines.add($ line)
-    session.insert(nextId, BufferId, id)
-    session.insert(nextId, Path, $ path)
-    session.insert(nextId, Lines, lines)
-    session.insert(nextId, CursorLine, vimCursorGetLine() - 1)
-    session.insert(nextId, CursorColumn, vimCursorGetColumn())
-    session.insert(nextId, ScrollX, 0f)
-    session.insert(nextId, ScrollY, 0f)
-    nextId += 1
+    if sessionId == -1:
+      sessionId = nextId
+      nextId += 1
+      var lines: seq[string]
+      for i in 0 ..< count:
+        let line = vimBufferGetLine(buf, linenr_T(i+1))
+        lines.add($ line)
+      session.insert(sessionId, BufferId, bufferId)
+      session.insert(sessionId, Path, $ path)
+      session.insert(sessionId, Lines, lines)
+      session.insert(sessionId, CursorLine, vimCursorGetLine() - 1)
+      session.insert(sessionId, CursorColumn, vimCursorGetColumn())
+      session.insert(sessionId, ScrollX, 0f)
+      session.insert(sessionId, ScrollY, 0f)
+
+proc onBufDelete(buf: buf_T) =
+  discard
 
 proc onAutoCommand(a1: event_T; buf: buf_T) {.cdecl.} =
   case a1:
     of EVENT_BUFENTER:
       onBufEnter(buf)
+    of EVENT_BUFDELETE:
+      onBufDelete(buf)
     else:
       discard
 
