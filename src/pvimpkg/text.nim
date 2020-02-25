@@ -1,6 +1,6 @@
 import nimgl/opengl, glm
 import paranim/gl, paranim/gl/uniforms, paranim/gl/attributes
-from paranim/gl/entities import crop
+from paranim/gl/entities import crop, color
 import paratext, paratext/gl/text
 
 const
@@ -124,7 +124,7 @@ var
   baseMonoEntity*: UncompiledTextEntity
   monoEntity*: ParavimTextEntity
 
-proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, text: string) =
+proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string) =
   instancedEntity.uniforms.u_char_counts.data.add(0)
   instancedEntity.uniforms.u_char_counts.disable = false
   let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
@@ -137,6 +137,7 @@ proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEnti
       bakedChar = font.chars[charIndex]
     var e = entity
     e.crop(bakedChar, x, font.baseline)
+    e.color(fontColor)
     instancedEntity.add(e)
     instancedEntity.uniforms.u_char_counts.data[lineNum] += 1
     x += bakedChar.xadvance

@@ -46,8 +46,9 @@ when isMainModule:
   glfwWindowHint(GLFWOpenglForwardCompat, GLFW_TRUE) # Used for Mac
   glfwWindowHint(GLFWOpenglProfile, GLFW_OPENGL_CORE_PROFILE)
   glfwWindowHint(GLFWResizable, GLFW_TRUE)
+  glfwWindowHint(GLFWTransparentFramebuffer, GLFW_TRUE)
 
-  let w: GLFWWindow = glfwCreateWindow(800, 600, "Paravim")
+  let w: GLFWWindow = glfwCreateWindow(1024, 768, "Paravim")
   if w == nil:
     quit(-1)
 

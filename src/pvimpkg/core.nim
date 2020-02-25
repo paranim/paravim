@@ -9,6 +9,11 @@ import sets
 from math import `mod`
 from glm import nil
 
+const
+  bgColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
+  textColor = glm.vec4(1f, 1f, 1f, 1f)
+  cursorColor = glm.vec4(GLfloat(112/255), GLfloat(128/255), GLfloat(144/255), GLfloat(0.9))
+
 type
   Id* = enum
     Global
@@ -114,23 +119,26 @@ proc tick*(game: RootGame) =
   let (fontSize) = session.query(rules.getFont)
   let currentBufferIndex = session.find(rules.getCurrentBuffer)
 
-  glClearColor(173/255, 216/255, 230/255, 1f)
+  glClearColor(bgColor.arr[0], bgColor.arr[1], bgColor.arr[2], bgColor.arr[3])
   glClear(GL_COLOR_BUFFER_BIT)
   glViewport(0, 0, int32(windowWidth), int32(windowHeight))
 
   if currentBufferIndex >= 0:
     let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
-    var e = deepCopy(text.monoEntity)
-    for i in 0 ..< currentBuffer.lines.len:
-      text.addLine(e, text.baseMonoEntity, text.monoFont, currentBuffer.lines[i])
-    e.project(float(windowWidth), float(windowHeight))
-    e.scale(fontSize, fontSize)
-    render(game, e)
 
-    let fontWidth = text.monoFont.chars[115 - text.monoFont.firstChar].xadvance
-    var e2 = cursorEntity
-    e2.project(float(windowWidth), float(windowHeight))
-    e2.scale(fontWidth * fontSize, text.monoFont.height * fontSize)
-    e2.translate(currentBuffer.cursorColumn.GLfloat, currentBuffer.cursorLine.GLfloat)
-    e2.color(glm.vec4(GLfloat(112/255), GLfloat(128/255), GLfloat(144/255), GLfloat(0.9)))
-    render(game, e2)
+    block:
+      let fontWidth = text.monoFont.chars[115 - text.monoFont.firstChar].xadvance
+      var e = cursorEntity
+      e.project(float(windowWidth), float(windowHeight))
+      e.scale(fontWidth * fontSize, text.monoFont.height * fontSize)
+      e.translate(currentBuffer.cursorColumn.GLfloat, currentBuffer.cursorLine.GLfloat)
+      e.color(cursorColor)
+      render(game, e)
+
+    block:
+      var e = deepCopy(text.monoEntity)
+      for i in 0 ..< currentBuffer.lines.len:
+        text.addLine(e, text.baseMonoEntity, text.monoFont, textColor, currentBuffer.lines[i])
+      e.project(float(windowWidth), float(windowHeight))
+      e.scale(fontSize, fontSize)
+      render(game, e)
