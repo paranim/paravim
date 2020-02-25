@@ -17,7 +17,7 @@ type
     FontSize, CurrentBufferId,
     BufferId, Lines, Path,
     CursorLine, CursorColumn,
-  CStrings = seq[cstring]
+  Strings = seq[string]
 
 schema Fact(Id, Attr):
   WindowWidth: int
@@ -28,8 +28,8 @@ schema Fact(Id, Attr):
   FontSize: float
   CurrentBufferId: int
   BufferId: int
-  Lines: CStrings
-  Path: cstring
+  Lines: Strings
+  Path: string
   CursorLine: int
   CursorColumn: int
 

@@ -124,7 +124,7 @@ var
   baseMonoEntity*: UncompiledTextEntity
   monoEntity*: ParavimTextEntity
 
-proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, text: cstring) =
+proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, text: string) =
   instancedEntity.uniforms.u_char_counts.data.add(0)
   instancedEntity.uniforms.u_char_counts.disable = false
   let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1

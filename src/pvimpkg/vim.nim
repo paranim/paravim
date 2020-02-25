@@ -15,12 +15,12 @@ proc onBufEnter(buf: buf_T) =
     count = vimBufferGetLineCount(buf)
   session.insert(Global, CurrentBufferId, id)
   if path != nil:
-    var lines: seq[cstring]
+    var lines: seq[string]
     for i in 0 ..< count:
       let line = vimBufferGetLine(buf, linenr_T(i+1))
-      lines.add(cstring(line))
+      lines.add($ line)
     session.insert(nextId, BufferId, id)
-    session.insert(nextId, Path, cstring(path))
+    session.insert(nextId, Path, $ path)
     session.insert(nextId, Lines, lines)
     session.insert(nextId, CursorLine, vimCursorGetLine() - 1)
     session.insert(nextId, CursorColumn, vimCursorGetColumn())
@@ -34,7 +34,14 @@ proc onAutoCommand(a1: event_T; buf: buf_T) {.cdecl.} =
       discard
 
 proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
-  echo bufferUpdate
+  let
+    firstLine = bufferUpdate.lnum - 1
+    lastLine = bufferUpdate.lnume - 1 + bufferUpdate.xtra
+  var lines: seq[string]
+  for i in firstLine ..< lastLine:
+    let line = vimBufferGetLine(bufferUpdate.buf, linenr_T(i+1))
+    lines.add($ line)
+  echo lines
 
 proc init*(quitCallback: QuitCallback) =
   vimSetAutoCommandCallback(onAutoCommand)
