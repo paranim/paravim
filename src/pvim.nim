@@ -20,30 +20,25 @@ const glfwToVim =
    GLFWKey.PAGE_DOWN: "PageDown"}.toTable
 
 proc keyCallback(window: GLFWWindow, key: int32, scancode: int32,
-                 action: int32, mods: int32): void {.cdecl.} =
+                 action: int32, mods: int32) {.cdecl.} =
   if action == GLFW_PRESS:
-    if key == GLFWKey.Escape:
-      window.setWindowShouldClose(true)
-    else:
-      if glfwToVim.hasKey(key):
-        vim.onInput("<" & glfwToVim[key] & ">")
+    if glfwToVim.hasKey(key):
+      vim.onInput("<" & glfwToVim[key] & ">")
 
 proc charCallback(window: GLFWWindow, codepoint: uint32) {.cdecl.} =
   vim.onInput("" & char(codepoint))
 
-proc mouseButtonCallback(window: GLFWWindow, button: int32, action: int32, mods: int32): void {.cdecl.} =
+proc mouseButtonCallback(window: GLFWWindow, button: int32, action: int32, mods: int32) {.cdecl.} =
   if action == GLFWPress:
     mouseClicked(button)
 
-proc cursorPosCallback(window: GLFWWindow, xpos: float64, ypos: float64): void {.cdecl.} =
+proc cursorPosCallback(window: GLFWWindow, xpos: float64, ypos: float64) {.cdecl.} =
   mouseMoved(xpos, ypos)
 
-proc frameSizeCallback(window: GLFWWindow, width: int32, height: int32): void {.cdecl.} =
+proc frameSizeCallback(window: GLFWWindow, width: int32, height: int32) {.cdecl.} =
   windowResized(width, height)
 
 when isMainModule:
-  vim.init()
-
   doAssert glfwInit()
 
   glfwWindowHint(GLFWContextVersionMajor, 4)
@@ -55,6 +50,8 @@ when isMainModule:
   let w: GLFWWindow = glfwCreateWindow(800, 600, "Paravim")
   if w == nil:
     quit(-1)
+
+  vim.init(proc (buf: pointer; isForced: cint) {.cdecl.} = w.setWindowShouldClose(true))
 
   w.makeContextCurrent()
   glfwSwapInterval(1)

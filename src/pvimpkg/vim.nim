@@ -36,9 +36,10 @@ proc onAutoCommand(a1: event_T; buf: buf_T) {.cdecl.} =
 proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   echo bufferUpdate
 
-proc init*() =
+proc init*(quitCallback: QuitCallback) =
   vimSetAutoCommandCallback(onAutoCommand)
   vimSetBufferUpdateCallback(onBufferUpdate)
+  vimSetQuitCallback(quitCallback)
   vimInit(0, nil)
 
   #let params = os.commandLineParams()

@@ -131,7 +131,7 @@ proc vimInput*(input: cstring) {.cdecl, dynlib: getLib(), importc: "vimInput".}
 ##  - `force`: a boolean if the command was forced (ie, if `q!` was used)
 ##
 
-#proc vimSetQuitCallback*(callback: QuitCallback)
+proc vimSetQuitCallback*(callback: QuitCallback) {.cdecl, dynlib: getLib(), importc: "vimSetQuitCallback".}
 ##
 ##  vimSetUnhandledEscapeCallback
 ##
