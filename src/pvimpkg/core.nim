@@ -24,6 +24,7 @@ type
     FontSize, CurrentBufferId, BufferUpdate,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
+    LineCount,
   Strings = seq[string]
 
 schema Fact(Id, Attr):
@@ -42,6 +43,7 @@ schema Fact(Id, Attr):
   CursorColumn: int
   ScrollX: float
   ScrollY: float
+  LineCount: int
 
 let rules =
   ruleset:
@@ -74,6 +76,14 @@ let rules =
       then:
         session.retract(Global, BufferUpdate, bu)
         session.insert(id, Lines, buffers.updateLines(lines, bu))
+    rule updateLineCount(Fact):
+      what:
+        (id, Lines, lines)
+        (id, LineCount, lineCount, then = false)
+      cond:
+        lines.len != lineCount
+      then:
+        session.insert(id, LineCount, lines.len)
     rule updateScrollX(Fact):
       what:
         (Global, WindowWidth, windowWidth)
@@ -82,32 +92,36 @@ let rules =
         (id, ScrollX, scrollX, then = false)
       then:
         let
-          fontWidth = text.monoFont.chars[0].xadvance * fontSize
-          cursorLeft = cursorColumn.float * fontWidth
-          cursorRight = cursorLeft + fontWidth
-          textWidth = windowWidth.float
-          scrollRight = scrollX + textWidth
+          textWidth = text.monoFont.chars[0].xadvance * fontSize
+          cursorLeft = cursorColumn.float * textWidth
+          cursorRight = cursorLeft + textWidth
+          textViewWidth = windowWidth.float
+          scrollRight = scrollX + textViewWidth
         if cursorLeft < scrollX:
           session.insert(id, ScrollX, cursorLeft)
         elif cursorRight > scrollRight:
-          session.insert(id, ScrollX, cursorRight - textWidth)
+          session.insert(id, ScrollX, cursorRight - textViewWidth)
     rule updateScrollY(Fact):
       what:
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
         (id, CursorLine, cursorLine)
         (id, ScrollY, scrollY, then = false)
+        (id, LineCount, lineCount)
       then:
         let
-          fontHeight = text.monoFont.height * fontSize
-          cursorTop = cursorLine.float * fontHeight
-          cursorBottom = cursorTop + fontHeight
-          textHeight = windowHeight.float
-          scrollBottom = scrollY + textHeight
+          textHeight = text.monoFont.height * fontSize
+          cursorTop = cursorLine.float * textHeight
+          cursorBottom = cursorTop + textHeight
+          textViewHeight = windowHeight.float
+          scrollBottom = scrollY + textViewHeight
+          documentBottom = lineCount.float * textHeight
         if cursorTop < scrollY:
           session.insert(id, ScrollY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
-          session.insert(id, ScrollY, cursorBottom - textHeight)
+          session.insert(id, ScrollY, cursorBottom - textViewHeight)
+        elif scrollY + textViewHeight > documentBottom:
+          session.insert(id, ScrollY, documentBottom - textViewHeight)
 
 var
   session* = initSession(Fact)

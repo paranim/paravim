@@ -30,6 +30,7 @@ proc onBufEnter(buf: buf_T) =
       session.insert(sessionId, CursorColumn, vimCursorGetColumn())
       session.insert(sessionId, ScrollX, 0f)
       session.insert(sessionId, ScrollY, 0f)
+      session.insert(sessionId, LineCount, count)
 
 proc onBufDelete(buf: buf_T) =
   discard
