@@ -127,7 +127,7 @@ proc tick*(game: RootGame) =
     let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
 
     block:
-      let fontWidth = text.monoFont.chars[115 - text.monoFont.firstChar].xadvance
+      let fontWidth = text.monoFont.chars[0].xadvance
       var e = cursorEntity
       e.project(float(windowWidth), float(windowHeight))
       e.scale(fontWidth * fontSize, text.monoFont.height * fontSize)

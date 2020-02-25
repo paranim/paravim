@@ -49,6 +49,16 @@ proc init*(quitCallback: QuitCallback) =
   vimSetBufferUpdateCallback(onBufferUpdate)
   vimSetQuitCallback(quitCallback)
   vimInit(0, nil)
+  vimExecute("set hidden")
+  vimExecute("set noswapfile")
+  vimExecute("set nobackup")
+  vimExecute("set nowritebackup")
+  vimExecute("set tabstop=2")
+  vimExecute("set softtabstop=2")
+  vimExecute("set shiftwidth=2")
+  vimExecute("set expandtab")
+  vimExecute("set hlsearch")
+  vimExecute("filetype plugin index on")
 
   #let params = os.commandLineParams()
   #for fname in params:

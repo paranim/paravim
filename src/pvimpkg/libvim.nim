@@ -108,7 +108,7 @@ proc vimCursorGetLine*(): linenr_T {.cdecl, dynlib: getLib(), importc: "vimCurso
 ## *
 
 proc vimInput*(input: cstring) {.cdecl, dynlib: getLib(), importc: "vimInput".}
-#proc vimExecute*(cmd: ptr char_u)
+proc vimExecute*(cmd: cstring) {.cdecl, dynlib: getLib(), importc: "vimExecute".}
 ## **
 ##  Messages
 ## *

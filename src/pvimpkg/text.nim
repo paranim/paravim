@@ -134,7 +134,11 @@ proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEnti
   for ch in text:
     let
       charIndex = int(ch) - font.firstChar
-      bakedChar = font.chars[charIndex]
+      bakedChar =
+        if charIndex >= 0 and charIndex < font.chars.len:
+          font.chars[charIndex]
+        else: # if char isn't found, use the space char
+          font.chars[0]
     var e = entity
     e.crop(bakedChar, x, font.baseline)
     e.color(fontColor)
