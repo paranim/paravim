@@ -169,23 +169,33 @@ proc tick*(game: RootGame) =
   glViewport(0, 0, int32(windowWidth), int32(windowHeight))
 
   if currentBufferIndex >= 0:
-    let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
+    let
+      currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
+      fontWidth = text.monoFont.chars[0].xadvance
+      textWidth = fontWidth * fontSize
+      textHeight = text.monoFont.height * fontSize
     var camera = glm.mat3f(1)
     camera.translate(currentBuffer.scrollX, currentBuffer.scrollY)
 
     block:
-      let fontWidth = text.monoFont.chars[0].xadvance
       var e = cursorEntity
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
-      e.scale(fontWidth * fontSize, text.monoFont.height * fontSize)
+      e.scale(textWidth, textHeight)
       e.translate(currentBuffer.cursorColumn.GLfloat, currentBuffer.cursorLine.GLfloat)
       e.color(cursorColor)
       render(game, e)
 
     block:
+      let
+        linesToSkip = int(currentBuffer.scrollY / textHeight)
+        visibleLines = int(windowHeight.float / textHeight) + 1
       var e = deepCopy(text.monoEntity)
-      for i in 0 ..< currentBuffer.lines.len:
+      e.uniforms.u_start_line.data = linesToSkip.int32
+      e.uniforms.u_start_line.disable = false
+      for i in linesToSkip ..< linesToSkip + visibleLines:
+        if i >= currentBuffer.lines.len:
+          break
         text.addLine(e, text.baseMonoEntity, text.monoFont, textColor, currentBuffer.lines[i])
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
