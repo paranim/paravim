@@ -17,7 +17,9 @@ type
     FontSize, CurrentBufferId,
     BufferId, Lines, Path,
     CursorLine, CursorColumn,
+    BufferUpdate,
   Strings = seq[string]
+  BufferUpdateTuple = tuple[bufferId: int, lines: seq[string], firstLine: int, lineCountChange: int]
 
 schema Fact(Id, Attr):
   WindowWidth: int
@@ -32,6 +34,7 @@ schema Fact(Id, Attr):
   Path: string
   CursorLine: int
   CursorColumn: int
+  BufferUpdate: BufferUpdateTuple
 
 let rules =
   ruleset:
@@ -50,6 +53,18 @@ let rules =
         (id, Lines, lines)
         (id, CursorLine, cursorLine)
         (id, CursorColumn, cursorColumn)
+    # buffer updates
+    rule onBufferUpdate(Fact):
+      what:
+        (Global, BufferUpdate, bu)
+        (id, Lines, lines)
+        (id, BufferId, bufferId)
+      cond:
+        bufferId == bu.bufferId
+      then:
+        session.retract(Global, BufferUpdate, bu)
+        echo bu
+
 
 var
   session* = initSession(Fact)

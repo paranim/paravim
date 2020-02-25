@@ -41,7 +41,8 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   for i in firstLine ..< lastLine:
     let line = vimBufferGetLine(bufferUpdate.buf, linenr_T(i+1))
     lines.add($ line)
-  echo lines
+  let id = vimBufferGetId(bufferUpdate.buf)
+  session.insert(Global, BufferUpdate, (id.int, lines, firstLine.int, bufferUpdate.xtra.int))
 
 proc init*(quitCallback: QuitCallback) =
   vimSetAutoCommandCallback(onAutoCommand)
