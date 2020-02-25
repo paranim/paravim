@@ -15,6 +15,9 @@ const
   bgColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
   textColor = glm.vec4(1f, 1f, 1f, 1f)
   cursorColor = glm.vec4(GLfloat(112/255), GLfloat(128/255), GLfloat(144/255), GLfloat(0.9))
+  fontSizeStep = 1/16
+  minFontSize = 1/8
+  maxFontSize = 1
 
 type
   Id* = enum
@@ -128,12 +131,12 @@ let rules =
           textViewHeight = windowHeight.float
           scrollBottom = scrollY + textViewHeight
           documentBottom = lineCount.float * textHeight
-        if cursorTop < scrollY:
+        if documentBottom > textViewHeight and scrollY + textViewHeight > documentBottom:
+          session.insert(id, ScrollY, documentBottom - textViewHeight)
+        elif cursorTop < scrollY:
           session.insert(id, ScrollY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
           session.insert(id, ScrollY, cursorBottom - textViewHeight)
-        elif scrollY + textViewHeight > documentBottom:
-          session.insert(id, ScrollY, documentBottom - textViewHeight)
 
 var
   session* = initSession(Fact)
@@ -169,6 +172,20 @@ proc onWindowResize*(width: int, height: int) =
     return
   session.insert(Global, WindowWidth, width)
   session.insert(Global, WindowHeight, height)
+
+proc fontDec*() =
+  let
+    (fontSize) = session.query(rules.getFont)
+    newFontSize = fontSize - fontSizeStep
+  if newFontSize >= minFontSize:
+    session.insert(Global, FontSize, newFontSize)
+
+proc fontInc*() =
+  let
+    (fontSize) = session.query(rules.getFont)
+    newFontSize = fontSize + fontSizeStep
+  if newFontSize <= maxFontSize:
+    session.insert(Global, FontSize, newFontSize)
 
 proc init*(game: var RootGame) =
   # opengl

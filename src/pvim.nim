@@ -36,7 +36,11 @@ proc keyCallback(window: GLFWWindow, key: int32, scancode: int32,
       isControl = 0 != bitand(mods, GLFW_MOD_CONTROL)
       isShift = 0 != bitand(mods, GLFW_MOD_SHIFT)
     if isControl:
-      if glfwToVimChars.hasKey(key):
+      if key == GLFWKey.Minus:
+        fontDec()
+      elif key == GLFWKey.Equal:
+        fontInc()
+      elif glfwToVimChars.hasKey(key):
         vim.onInput("<C-" & (if isShift: "S-" else: "") & glfwToVimChars[key] & ">")
     elif glfwToVimSpecials.hasKey(key):
       vim.onInput("<" & glfwToVimSpecials[key] & ">")
