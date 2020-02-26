@@ -28,7 +28,7 @@ type
     WindowWidth, WindowHeight,
     MouseClick, MouseX, MouseY,
     FontSize, CurrentBufferId, BufferUpdate,
-    VimMode, VimCommandText, VimCommandStart,
+    VimMode, VimCommandText, VimCommandStart, VimCommandPosition,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
     LineCount,
@@ -46,6 +46,7 @@ schema Fact(Id, Attr):
   VimMode: int
   VimCommandText: string
   VimCommandStart: string
+  VimCommandPosition: int
   BufferId: int
   Lines: Strings
   Path: string
@@ -69,6 +70,7 @@ let rules =
         (Global, VimMode, mode)
         (Global, VimCommandText, commandText)
         (Global, VimCommandStart, commandStart)
+        (Global, VimCommandPosition, commandPosition)
     rule getCurrentBuffer(Fact):
       what:
         (Global, CurrentBufferId, cb)
@@ -263,7 +265,7 @@ proc tick*(game: RootGame) =
       e.scale(fontSize, fontSize)
       render(game, e)
 
-  # command line
+  # command line background
   block:
     var e = cmdLineEntity
     e.project(float(windowWidth), float(windowHeight))
@@ -272,11 +274,21 @@ proc tick*(game: RootGame) =
     e.color(if vim.mode == libvim.CommandLine.ord: tanColor else: bgColor)
     render(game, e)
   if vim.mode == libvim.CommandLine.ord:
-    var e = deepCopy(monoEntity)
-    e.uniforms.u_start_line.data = 0
-    e.uniforms.u_start_line.disable = false
-    text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText)
-    e.project(float(windowWidth), float(windowHeight))
-    e.translate(0f, float(windowHeight) - textHeight)
-    e.scale(fontSize, fontSize)
-    render(game, e)
+    # command line cursor
+    block:
+      var e = cursorEntity
+      e.project(float(windowWidth), float(windowHeight))
+      e.translate((vim.commandPosition.float + 1) * textWidth, float(windowHeight) - textHeight)
+      e.scale(textWidth / 4, textHeight)
+      e.color(cursorColor)
+      render(game, e)
+    # command line text
+    block:
+      var e = deepCopy(monoEntity)
+      e.uniforms.u_start_line.data = 0
+      e.uniforms.u_start_line.disable = false
+      text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText)
+      e.project(float(windowWidth), float(windowHeight))
+      e.translate(0f, float(windowHeight) - textHeight)
+      e.scale(fontSize, fontSize)
+      render(game, e)

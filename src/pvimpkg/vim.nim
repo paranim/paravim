@@ -15,6 +15,7 @@ proc onInput*(input: string) =
     session.insert(id, CursorColumn, vimCursorGetColumn())
   if mode == libvim.CommandLine.ord:
     session.insert(Global, VimCommandText, $ vimCommandLineGetText())
+    session.insert(Global, VimCommandPosition, vimCommandLineGetPosition())
     if oldMode != mode:
       session.insert(Global, VimCommandStart, if not validCommandStarts.contains(input[0]): ":" else: input)
 
@@ -83,6 +84,7 @@ proc init*(quitCallback: QuitCallback) =
 
   session.insert(Global, VimMode, vimGetMode())
   session.insert(Global, VimCommandText, "")
+  session.insert(Global, VimCommandPosition, 0)
   session.insert(Global, VimCommandStart, "")
 
   #let params = os.commandLineParams()
