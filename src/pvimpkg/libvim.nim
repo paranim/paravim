@@ -10,9 +10,9 @@ proc getLib(): string =
     elif defined(linux):
       "so"
   when not defined(release):
-    "src/pvimpkg/libvim." & extension
+    "src/pvimpkg/bin/libvim." & extension
   else:
-    getAppDir().joinPath("pvimpkg").joinPath("libvim." & extension)
+    getAppDir().joinPath("pvimpkg").joinPath("bin").joinPath("libvim." & extension)
 
 type
   Mode* = enum
