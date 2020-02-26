@@ -52,6 +52,8 @@ proc updateCommand(input: string, start: bool) =
       let
         firstPart = cropCommandText(commandText)
       completion = firstPart & $ completions[0]
+      for i in 0 ..< count:
+        vimFree(completions[i])
   session.insert(Global, VimCommandCompletion, completion)
 
 proc onInput*(input: string) =

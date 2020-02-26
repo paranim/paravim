@@ -250,3 +250,5 @@ proc vimGetMode*(): cint {.cdecl, dynlib: getLib(), importc: "vimGetMode".}
 
 #proc vimSetDisplayIntroCallback*(callback: VoidCallback)
 #proc vimSetDisplayVersionCallback*(callback: VoidCallback)
+
+proc vimFree*(p: pointer) {.cdecl, dynlib: getLib(), importc: "vim_free".}
