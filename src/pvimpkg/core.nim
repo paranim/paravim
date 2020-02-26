@@ -43,7 +43,7 @@ type
     VimMode, VimCommandText, VimCommandStart,
     VimCommandPosition, VimCommandCompletion,
     VimVisualRange, VimSearchRanges, VimShowSearch,
-    AsciiArt,
+    AsciiArt, DeleteBuffer,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
     LineCount,
@@ -68,6 +68,7 @@ schema Fact(Id, Attr):
   VimSearchRanges: RangeTuples
   VimShowSearch: bool
   AsciiArt: string
+  DeleteBuffer: int
   BufferId: int
   Lines: Strings
   Path: string
@@ -99,17 +100,36 @@ let rules* =
         (Global, VimShowSearch, showSearch)
     rule getCurrentBuffer(Fact):
       what:
-        (Global, CurrentBufferId, cb)
-        (id, BufferId, cb)
+        (Global, CurrentBufferId, bufferId)
+        (id, BufferId, bufferId)
         (id, Lines, lines)
         (id, CursorLine, cursorLine)
         (id, CursorColumn, cursorColumn)
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
+        (id, LineCount, lineCount)
     rule getBuffer(Fact):
       what:
         (id, BufferId, bufferId)
-    rule onBufferUpdate(Fact):
+    rule deleteBuffer(Fact):
+      what:
+        (Global, DeleteBuffer, bufferId)
+        (id, BufferId, bufferId)
+        (id, Lines, lines)
+        (id, CursorLine, cursorLine)
+        (id, CursorColumn, cursorColumn)
+        (id, ScrollX, scrollX)
+        (id, ScrollY, scrollY)
+        (id, LineCount, lineCount)
+      then:
+        session.retract(id, BufferId, bufferId)
+        session.retract(id, Lines, lines)
+        session.retract(id, CursorLine, cursorLine)
+        session.retract(id, CursorColumn, cursorColumn)
+        session.retract(id, ScrollX, scrollX)
+        session.retract(id, ScrollY, scrollY)
+        session.retract(id, LineCount, lineCount)
+    rule updateBuffer(Fact):
       what:
         (Global, BufferUpdate, bu)
         (id, Lines, lines)
@@ -119,7 +139,7 @@ let rules* =
       then:
         session.retract(Global, BufferUpdate, bu)
         session.insert(id, Lines, buffers.updateLines(lines, bu))
-    rule onWindowResize(Fact):
+    rule resizeWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)
         (Global, WindowHeight, windowHeight)

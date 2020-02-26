@@ -131,7 +131,9 @@ proc onBufEnter(buf: buf_T) =
       session.insert(sessionId, LineCount, count)
 
 proc onBufDelete(buf: buf_T) =
-  discard
+  let bufferId = vimBufferGetId(buf)
+  session.insert(Global, DeleteBuffer, bufferId)
+  session.retract(Global, DeleteBuffer, bufferId)
 
 proc onAutoCommand(a1: event_T; buf: buf_T) {.cdecl.} =
   case a1:
