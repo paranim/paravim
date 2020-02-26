@@ -11,16 +11,25 @@ import sets
 from math import `mod`
 from glm import nil
 from libvim import nil
+import tables
+from strutils import nil
+from times import nil
 
 const
   bgColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
   textColor = glm.vec4(1f, 1f, 1f, 1f)
+  asciiColor = glm.vec4(1f, 1f, 1f, 0.5f)
   cursorColor = glm.vec4(GLfloat(112/255), GLfloat(128/255), GLfloat(144/255), GLfloat(0.9))
   tanColor = glm.vec4(GLfloat(209/255), GLfloat(153/255), GLfloat(101/255), GLfloat(1))
   completionColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.65))
   fontSizeStep = 1/16
   minFontSize = 1/8
   maxFontSize = 1
+  asciiArt* = {"smile": strutils.splitLines(staticRead("assets/ascii/smile.txt")),
+               "intro": strutils.splitLines(staticRead("assets/ascii/intro.txt")),
+               "cat": strutils.splitLines(staticRead("assets/ascii/cat.txt")),
+               "usa": strutils.splitLines(staticRead("assets/ascii/usa.txt")),
+               "christmas": strutils.splitLines(staticRead("assets/ascii/christmas.txt"))}.toTable
 
 type
   Id* = enum
@@ -31,6 +40,7 @@ type
     FontSize, CurrentBufferId, BufferUpdate,
     VimMode, VimCommandText, VimCommandStart,
     VimCommandPosition, VimCommandCompletion,
+    AsciiArt,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
     LineCount,
@@ -50,6 +60,7 @@ schema Fact(Id, Attr):
   VimCommandStart: string
   VimCommandPosition: int
   VimCommandCompletion: string
+  AsciiArt: string
   BufferId: int
   Lines: Strings
   Path: string
@@ -65,6 +76,7 @@ let rules* =
       what:
         (Global, WindowWidth, windowWidth)
         (Global, WindowHeight, windowHeight)
+        (Global, AsciiArt, ascii)
     rule getFont(Fact):
       what:
         (Global, FontSize, fontSize)
@@ -220,10 +232,19 @@ proc init*(game: var RootGame) =
 
   # set initial values
   session.insert(Global, FontSize, 1/4)
+  let
+    date = times.now()
+    md = (date.month, date.monthday.ord)
+    ascii =
+        if md == (times.mAug, 8): "cat"
+        elif md == (times.mJul, 4): "usa"
+        elif md == (times.mDec, 25): "christmas"
+        else: "intro"
+  session.insert(Global, AsciiArt, ascii)
 
 proc tick*(game: RootGame) =
   let
-    (windowWidth, windowHeight) = session.query(rules.getWindow)
+    (windowWidth, windowHeight, ascii) = session.query(rules.getWindow)
     (fontSize) = session.query(rules.getFont)
     vim = session.query(rules.getVim)
     currentBufferIndex = session.find(rules.getCurrentBuffer)
@@ -235,11 +256,19 @@ proc tick*(game: RootGame) =
   glClear(GL_COLOR_BUFFER_BIT)
   glViewport(0, 0, int32(windowWidth), int32(windowHeight))
 
-  if currentBufferIndex >= 0:
+  if ascii != "":
+    var e = deepCopy(monoEntity)
+    e.uniforms.u_start_line.data = 0
+    e.uniforms.u_start_line.disable = false
+    for line in asciiArt[ascii]:
+      discard text.addLine(e, baseMonoEntity, text.monoFont, asciiColor, line)
+    e.project(float(windowWidth), float(windowHeight))
+    e.scale(fontSize, fontSize)
+    render(game, e)
+  elif currentBufferIndex >= 0:
     let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
     var camera = glm.mat3f(1)
     camera.translate(currentBuffer.scrollX, currentBuffer.scrollY)
-
     # cursor
     if vim.mode != libvim.CommandLine.ord:
       var e = rectEntity
@@ -249,7 +278,6 @@ proc tick*(game: RootGame) =
       e.scale(if vim.mode == libvim.Insert.ord: textWidth / 4 else: textWidth, textHeight)
       e.color(cursorColor)
       render(game, e)
-
     # text
     block:
       let

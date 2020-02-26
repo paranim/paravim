@@ -2,6 +2,7 @@ import libvim, structs, core
 from pararules import nil
 from os import nil
 from strutils import nil
+import tables
 
 proc cropCommandText(commandText: string): string =
   result = ""
@@ -21,6 +22,14 @@ proc completeCommand() =
       vimInput($ vim.commandCompletion[i])
 
 const validCommandStarts = {':', '?', '/'}
+
+proc executeCommand() =
+  let vim = pararules.query(session, rules.getVim)
+  if asciiArt.hasKey(vim.commandText):
+    session.insert(Global, AsciiArt, vim.commandText)
+    vimInput("<Esc>")
+  else:
+    vimInput("<Enter>")
 
 proc updateCommand(input: string, start: bool) =
   let
@@ -49,7 +58,10 @@ proc onInput*(input: string) =
   let oldMode = vimGetMode()
   if oldMode == libvim.CommandLine.ord and input == "<Tab>":
     completeCommand()
+  elif oldMode == libvim.CommandLine.ord and input == "<Enter>":
+    executeCommand()
   else:
+    session.insert(Global, AsciiArt, "")
     vimInput(input)
   let mode = vimGetMode()
   session.insert(Global, VimMode, mode)
