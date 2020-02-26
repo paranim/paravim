@@ -5,6 +5,7 @@ from paranim/primitives import nil
 from paranim/math as pmath import translate
 import pararules
 from text import nil
+from paratext/gl/text as ptext import nil
 from buffers import BufferUpdateTuple
 import sets
 from math import `mod`
@@ -146,6 +147,8 @@ let rules =
 var
   session* = initSession(Fact)
   nextId* = Id.high.ord + 1
+  baseMonoEntity: ptext.UncompiledTextEntity
+  monoEntity: text.ParavimTextEntity
   cursorEntity: TwoDEntity
   cmdLineEntity: TwoDEntity
 
@@ -200,7 +203,11 @@ proc init*(game: var RootGame) =
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
   # init font
-  text.init(game)
+  baseMonoEntity = ptext.initTextEntity(text.monoFont)
+  let
+    uncompiledMonoEntity = text.initInstancedEntity(baseMonoEntity, text.monoFont)
+    compiledMonoEntity = compile(game, uncompiledMonoEntity)
+  monoEntity = deepCopy(compiledMonoEntity)
 
   # init entities
   cursorEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
@@ -243,13 +250,13 @@ proc tick*(game: RootGame) =
       let
         linesToSkip = int(currentBuffer.scrollY / textHeight)
         visibleLines = int(windowHeight.float / textHeight) + 1
-      var e = deepCopy(text.monoEntity)
+      var e = deepCopy(monoEntity)
       e.uniforms.u_start_line.data = linesToSkip.int32
       e.uniforms.u_start_line.disable = false
       for i in linesToSkip ..< linesToSkip + visibleLines:
         if i >= currentBuffer.lines.len:
           break
-        text.addLine(e, text.baseMonoEntity, text.monoFont, textColor, currentBuffer.lines[i])
+        text.addLine(e, baseMonoEntity, text.monoFont, textColor, currentBuffer.lines[i])
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
       e.scale(fontSize, fontSize)

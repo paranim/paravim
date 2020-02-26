@@ -27,7 +27,7 @@ type
     a_color: Attribute[GLfloat]
   ]
   ParavimTextEntity* = object of InstancedEntity[ParavimTextEntityUniforms, ParavimTextEntityAttributes]
-  UncompiledParavimTextEntity* = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
+  UncompiledParavimTextEntity = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
 
 proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledParavimTextEntity =
   result.vertexSource = instancedTextVertexShader
@@ -117,10 +117,6 @@ proc `[]=`*(instancedEntity: var UncompiledParavimTextEntity, i: int, entity: Un
   setInstanceAttr(instancedEntity.attributes.a_texture_matrix, i, entity.uniforms.u_texture_matrix)
   setInstanceAttr(instancedEntity.attributes.a_color, i, entity.uniforms.u_color)
 
-var
-  baseMonoEntity*: UncompiledTextEntity
-  monoEntity*: ParavimTextEntity
-
 proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string) =
   instancedEntity.uniforms.u_char_counts.data.add(0)
   instancedEntity.uniforms.u_char_counts.disable = false
@@ -143,10 +139,3 @@ proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEnti
     instancedEntity.uniforms.u_char_counts.data[lineNum] += 1
     x += bakedChar.xadvance
     i += 1
-
-proc init*(game: var RootGame) =
-  baseMonoEntity = initTextEntity(monoFont)
-  let
-    uncompiledMonoEntity = initInstancedEntity(baseMonoEntity, monoFont)
-    compiledMonoEntity = compile(game, uncompiledMonoEntity)
-  monoEntity = deepCopy(compiledMonoEntity)
