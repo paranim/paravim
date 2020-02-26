@@ -1,13 +1,22 @@
 import libvim, structs, core
 from os import nil
+from strutils import nil
+
+const validCommandStarts = {':', '?', '/'}
 
 proc onInput*(input: string) =
+  let oldMode = vimGetMode()
   vimInput(input)
-  session.insert(Global, VimMode, vimGetMode())
+  let mode = vimGetMode()
+  session.insert(Global, VimMode, mode)
   let id = getCurrentSessionId()
   if id >= 0:
     session.insert(id, CursorLine, vimCursorGetLine() - 1)
     session.insert(id, CursorColumn, vimCursorGetColumn())
+  if mode == libvim.CommandLine.ord:
+    session.insert(Global, VimCommandText, $ vimCommandLineGetText())
+    if oldMode != mode:
+      session.insert(Global, VimCommandStart, if not validCommandStarts.contains(input[0]): ":" else: input)
 
 proc onBufEnter(buf: buf_T) =
   let
@@ -73,6 +82,8 @@ proc init*(quitCallback: QuitCallback) =
   vimExecute("filetype plugin index on")
 
   session.insert(Global, VimMode, vimGetMode())
+  session.insert(Global, VimCommandText, "")
+  session.insert(Global, VimCommandStart, "")
 
   #let params = os.commandLineParams()
   #for fname in params:

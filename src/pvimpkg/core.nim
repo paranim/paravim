@@ -27,7 +27,8 @@ type
   Attr* = enum
     WindowWidth, WindowHeight,
     MouseClick, MouseX, MouseY,
-    FontSize, CurrentBufferId, BufferUpdate, VimMode,
+    FontSize, CurrentBufferId, BufferUpdate,
+    VimMode, VimCommandText, VimCommandStart,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
     LineCount,
@@ -43,6 +44,8 @@ schema Fact(Id, Attr):
   CurrentBufferId: int
   BufferUpdate: BufferUpdateTuple
   VimMode: int
+  VimCommandText: string
+  VimCommandStart: string
   BufferId: int
   Lines: Strings
   Path: string
@@ -61,9 +64,11 @@ let rules =
     rule getFont(Fact):
       what:
         (Global, FontSize, fontSize)
-    rule getMode(Fact):
+    rule getVim(Fact):
       what:
-        (Global, VimMode, vimMode)
+        (Global, VimMode, mode)
+        (Global, VimCommandText, commandText)
+        (Global, VimCommandStart, commandStart)
     rule getCurrentBuffer(Fact):
       what:
         (Global, CurrentBufferId, cb)
@@ -202,14 +207,10 @@ proc init*(game: var RootGame) =
   glEnable(GL_BLEND)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-  # init font
-  baseMonoEntity = ptext.initTextEntity(text.monoFont)
-  let
-    uncompiledMonoEntity = text.initInstancedEntity(baseMonoEntity, text.monoFont)
-    compiledMonoEntity = compile(game, uncompiledMonoEntity)
-  monoEntity = deepCopy(compiledMonoEntity)
-
   # init entities
+  baseMonoEntity = ptext.initTextEntity(text.monoFont)
+  let uncompiledMonoEntity = text.initInstancedEntity(baseMonoEntity, text.monoFont)
+  monoEntity = compile(game, uncompiledMonoEntity)
   cursorEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
   cmdLineEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
 
@@ -220,7 +221,7 @@ proc tick*(game: RootGame) =
   let
     (windowWidth, windowHeight) = session.query(rules.getWindow)
     (fontSize) = session.query(rules.getFont)
-    (vimMode) = session.query(rules.getMode)
+    vim = session.query(rules.getVim)
     currentBufferIndex = session.find(rules.getCurrentBuffer)
     fontWidth = text.monoFont.chars[0].xadvance
     textWidth = fontWidth * fontSize
@@ -236,12 +237,12 @@ proc tick*(game: RootGame) =
     camera.translate(currentBuffer.scrollX, currentBuffer.scrollY)
 
     # cursor
-    if vimMode != libvim.CommandLine.ord:
+    if vim.mode != libvim.CommandLine.ord:
       var e = cursorEntity
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
       e.translate(currentBuffer.cursorColumn.GLfloat * textWidth, currentBuffer.cursorLine.GLfloat * textHeight)
-      e.scale(if vimMode == libvim.Insert.ord: textWidth / 4 else: textWidth, textHeight)
+      e.scale(if vim.mode == libvim.Insert.ord: textWidth / 4 else: textWidth, textHeight)
       e.color(cursorColor)
       render(game, e)
 
@@ -263,9 +264,19 @@ proc tick*(game: RootGame) =
       render(game, e)
 
   # command line
-  var e = cmdLineEntity
-  e.project(float(windowWidth), float(windowHeight))
-  e.translate(0f, float(windowHeight) - textHeight)
-  e.scale(float(windowWidth), textHeight)
-  e.color(if vimMode == libvim.CommandLine.ord: tanColor else: bgColor)
-  render(game, e)
+  block:
+    var e = cmdLineEntity
+    e.project(float(windowWidth), float(windowHeight))
+    e.translate(0f, float(windowHeight) - textHeight)
+    e.scale(float(windowWidth), textHeight)
+    e.color(if vim.mode == libvim.CommandLine.ord: tanColor else: bgColor)
+    render(game, e)
+  if vim.mode == libvim.CommandLine.ord:
+    var e = deepCopy(monoEntity)
+    e.uniforms.u_start_line.data = 0
+    e.uniforms.u_start_line.disable = false
+    text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText)
+    e.project(float(windowWidth), float(windowHeight))
+    e.translate(0f, float(windowHeight) - textHeight)
+    e.scale(fontSize, fontSize)
+    render(game, e)
