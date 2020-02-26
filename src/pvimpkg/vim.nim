@@ -1,7 +1,6 @@
 import libvim, structs, core
 from buffers import nil
 from pararules import nil
-from os import nil
 from strutils import nil
 import tables
 
@@ -157,7 +156,7 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
 proc onStopSearch() {.cdecl.} =
   session.insert(Global, VimShowSearch, false)
 
-proc init*(onQuit: QuitCallback) =
+proc init*(filesToOpen: seq[string], onQuit: QuitCallback) =
   vimSetAutoCommandCallback(onAutoCommand)
   vimSetBufferUpdateCallback(onBufferUpdate)
   vimSetQuitCallback(onQuit)
@@ -185,7 +184,5 @@ proc init*(onQuit: QuitCallback) =
   session.insert(Global, VimSearchRanges, @[])
   session.insert(Global, VimShowSearch, false)
 
-  #let params = os.commandLineParams()
-  #for fname in params:
-  #  discard vimBufferOpen(fname, 1, 0)
-  discard vimBufferOpen("src/pvim.nim", 1, 0)
+  for fname in filesToOpen:
+    discard vimBufferOpen(fname, 1, 0)

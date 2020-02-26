@@ -4,6 +4,7 @@ import pvimpkg/core
 from pvimpkg/vim import nil
 import tables
 import bitops
+from os import nil
 
 const glfwToVimSpecials =
   {GLFWKey.BACKSPACE: "BS",
@@ -72,7 +73,8 @@ when isMainModule:
   if w == nil:
     quit(-1)
 
-  vim.init(proc (buf: pointer; isForced: cint) {.cdecl.} = w.setWindowShouldClose(true))
+  let params = os.commandLineParams()
+  vim.init(params, proc (buf: pointer; isForced: cint) {.cdecl.} = w.setWindowShouldClose(true))
 
   w.makeContextCurrent()
   glfwSwapInterval(1)
@@ -87,7 +89,7 @@ when isMainModule:
   w.frameSizeCallback(width, height)
 
   var game = gl.RootGame()
-  game.init()
+  game.init(params.len == 0)
 
   while not w.windowShouldClose:
     game.tick()

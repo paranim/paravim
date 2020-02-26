@@ -230,7 +230,7 @@ proc fontInc*() =
   if newFontSize <= maxFontSize:
     session.insert(Global, FontSize, newFontSize)
 
-proc init*(game: var RootGame) =
+proc init*(game: var RootGame, showAscii: bool) =
   # opengl
   doAssert glInit()
   glEnable(GL_BLEND)
@@ -246,14 +246,17 @@ proc init*(game: var RootGame) =
 
   # set initial values
   session.insert(Global, FontSize, 1/4)
-  let
-    date = times.now()
-    md = (date.month, date.monthday.ord)
-    ascii =
-        if md == (times.mAug, 8): "cat"
-        elif md == (times.mJul, 4): "usa"
-        elif md == (times.mDec, 25): "christmas"
-        else: "intro"
+  let ascii =
+    if showAscii:
+      let
+        date = times.now()
+        md = (date.month, date.monthday.ord)
+      if md == (times.mAug, 8): "cat"
+      elif md == (times.mJul, 4): "usa"
+      elif md == (times.mDec, 25): "christmas"
+      else: "intro"
+    else:
+      ""
   session.insert(Global, AsciiArt, ascii)
 
 proc tick*(game: RootGame) =
