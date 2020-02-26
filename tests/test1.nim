@@ -9,7 +9,7 @@ import unittest
 import pvimpkg/libvim
 from pvimpkg/vim import nil
 
-vim.init(nil)
+vim.init(@[], nil)
 
 test "set the tab size":
   vimOptionSetTabSize(2)
