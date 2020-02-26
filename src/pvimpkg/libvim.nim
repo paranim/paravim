@@ -177,7 +177,7 @@ proc vimOptionGetTabSize*(): cint {.cdecl, dynlib: getLib(), importc: "vimOption
 ## *
 
 #proc vimVisualGetType*(): cint
-#proc vimVisualIsActive*(): cint
+proc vimVisualIsActive*(): cint {.cdecl, dynlib: getLib(), importc: "vimVisualIsActive".}
 #proc vimSelectIsActive*(): cint
 ##
 ##  vimVisualGetRange
@@ -186,7 +186,7 @@ proc vimOptionGetTabSize*(): cint {.cdecl, dynlib: getLib(), importc: "vimOption
 ##  If not in visual or select mode, returns the last visual range.
 ##
 
-#proc vimVisualGetRange*(startPos: ptr pos_T; endPos: ptr pos_T)
+proc vimVisualGetRange*(startPos: ptr pos_T; endPos: ptr pos_T) {.cdecl, dynlib: getLib(), importc: "vimVisualGetRange".}
 ## **
 ##  Search
 ## *

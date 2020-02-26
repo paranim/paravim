@@ -71,6 +71,12 @@ proc onInput*(input: string) =
     session.insert(id, CursorColumn, vimCursorGetColumn())
   if mode == libvim.CommandLine.ord:
     updateCommand(input, oldMode != mode)
+  if vimVisualIsActive() == 1:
+    var startPos, endPos: pos_T
+    vimVisualGetRange(startPos.addr, endPos.addr)
+    session.insert(Global, VimVisualRange, (int(startPos.lnum-1), int(startPos.col), int(endPos.lnum-1), int(endPos.col)))
+  else:
+    session.insert(Global, VimVisualRange, (0, 0, 0, 0))
 
 proc onBufEnter(buf: buf_T) =
   let
@@ -140,6 +146,7 @@ proc init*(quitCallback: QuitCallback) =
   session.insert(Global, VimCommandStart, "")
   session.insert(Global, VimCommandPosition, 0)
   session.insert(Global, VimCommandCompletion, "")
+  session.insert(Global, VimVisualRange, (0, 0, 0, 0))
 
   #let params = os.commandLineParams()
   #for fname in params:

@@ -6,7 +6,7 @@ from paranim/math as pmath import translate
 import pararules
 from text import nil
 from paratext/gl/text as ptext import nil
-from buffers import BufferUpdateTuple
+from buffers import BufferUpdateTuple, RangeTuple
 import sets
 from math import `mod`
 from glm import nil
@@ -22,6 +22,7 @@ const
   cursorColor = glm.vec4(GLfloat(112/255), GLfloat(128/255), GLfloat(144/255), GLfloat(0.9))
   tanColor = glm.vec4(GLfloat(209/255), GLfloat(153/255), GLfloat(101/255), GLfloat(1))
   completionColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.65))
+  selectColor = glm.vec4(GLfloat(148/255), GLfloat(69/255), GLfloat(5/255), GLfloat(0.8))
   fontSizeStep = 1/16
   minFontSize = 1/8
   maxFontSize = 1
@@ -40,6 +41,7 @@ type
     FontSize, CurrentBufferId, BufferUpdate,
     VimMode, VimCommandText, VimCommandStart,
     VimCommandPosition, VimCommandCompletion,
+    VimVisualRange,
     AsciiArt,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
@@ -60,6 +62,7 @@ schema Fact(Id, Attr):
   VimCommandStart: string
   VimCommandPosition: int
   VimCommandCompletion: string
+  VimVisualRange: RangeTuple
   AsciiArt: string
   BufferId: int
   Lines: Strings
@@ -87,6 +90,7 @@ let rules* =
         (Global, VimCommandStart, commandStart)
         (Global, VimCommandPosition, commandPosition)
         (Global, VimCommandCompletion, commandCompletion)
+        (Global, VimVisualRange, visualRange)
     rule getCurrentBuffer(Fact):
       what:
         (Global, CurrentBufferId, cb)
@@ -172,7 +176,9 @@ var
   nextId* = Id.high.ord + 1
   baseMonoEntity: ptext.UncompiledTextEntity
   monoEntity: text.ParavimTextEntity
+  uncompiledRectEntity: UncompiledTwoDEntity
   rectEntity: TwoDEntity
+  rectsEntity: InstancedTwoDEntity
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
@@ -228,7 +234,9 @@ proc init*(game: var RootGame) =
   baseMonoEntity = ptext.initTextEntity(text.monoFont)
   let uncompiledMonoEntity = text.initInstancedEntity(baseMonoEntity, text.monoFont)
   monoEntity = compile(game, uncompiledMonoEntity)
-  rectEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
+  uncompiledRectEntity = initTwoDEntity(primitives.rectangle[GLfloat]())
+  rectEntity = compile(game, uncompiledRectEntity)
+  rectsEntity = compile(game, initInstancedEntity(uncompiledRectEntity))
 
   # set initial values
   session.insert(Global, FontSize, 1/4)
@@ -249,8 +257,9 @@ proc tick*(game: RootGame) =
     vim = session.query(rules.getVim)
     currentBufferIndex = session.find(rules.getCurrentBuffer)
     fontWidth = text.monoFont.chars[0].xadvance
+    fontHeight = text.monoFont.height
     textWidth = fontWidth * fontSize
-    textHeight = text.monoFont.height * fontSize
+    textHeight = fontHeight * fontSize
 
   glClearColor(bgColor.arr[0], bgColor.arr[1], bgColor.arr[2], bgColor.arr[3])
   glClear(GL_COLOR_BUFFER_BIT)
@@ -269,15 +278,31 @@ proc tick*(game: RootGame) =
     let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
     var camera = glm.mat3f(1)
     camera.translate(currentBuffer.scrollX, currentBuffer.scrollY)
-    # cursor
-    if vim.mode != libvim.CommandLine.ord:
-      var e = rectEntity
-      e.project(float(windowWidth), float(windowHeight))
-      e.invert(camera)
-      e.translate(currentBuffer.cursorColumn.GLfloat * textWidth, currentBuffer.cursorLine.GLfloat * textHeight)
-      e.scale(if vim.mode == libvim.Insert.ord: textWidth / 4 else: textWidth, textHeight)
-      e.color(cursorColor)
-      render(game, e)
+    block:
+      var e = deepCopy(rectsEntity)
+      # cursor
+      if vim.mode != libvim.CommandLine.ord:
+        var e2 = uncompiledRectEntity
+        e2.project(float(windowWidth), float(windowHeight))
+        e2.invert(camera)
+        e2.translate(currentBuffer.cursorColumn.GLfloat * textWidth, currentBuffer.cursorLine.GLfloat * textHeight)
+        e2.scale(if vim.mode == libvim.Insert.ord: textWidth / 4 else: textWidth, textHeight)
+        e2.color(cursorColor)
+        e.add(e2)
+      # selection
+      if vim.visualRange != (0, 0, 0, 0):
+        let rects = buffers.rangeToRects(buffers.normalizeRange(vim.visualRange), currentBuffer.lines)
+        for (left, top, width, height) in rects:
+          var e2 = uncompiledRectEntity
+          e2.project(float(windowWidth), float(windowHeight))
+          e2.invert(camera)
+          e2.scale(textWidth, textHeight)
+          e2.translate(left, top)
+          e2.scale(width, height)
+          e2.color(selectColor)
+          e.add(e2)
+      if e.instanceCount > 0:
+        render(game, e)
     # text
     block:
       let
