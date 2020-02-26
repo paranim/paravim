@@ -103,8 +103,8 @@ proc onInput*(input: string) =
     session.insert(id, CursorColumn, vimCursorGetColumn())
   if mode == libvim.CommandLine.ord:
     updateCommand(input, oldMode != mode)
-    updateSearchHighlights()
   updateSelection()
+  updateSearchHighlights()
 
 proc onBufEnter(buf: buf_T) =
   let
