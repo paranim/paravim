@@ -39,7 +39,7 @@ proc normalizeRange*(rangeData: RangeTuple): RangeTuple =
 
 proc rangeToRects*(rangeData: RangeTuple, lines: seq[string]): seq[RectTuple] =
   var (startLine, startCol, endLine, endCol) = rangeData
-  result = newSeq[RectTuple](endLine - startLine)
+  result = newSeq[RectTuple]()
   for lineNum in startLine .. endLine:
     let
       startCol = if lineNum == startLine: startCol else: 0
