@@ -15,6 +15,7 @@ const
   bgColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
   textColor = glm.vec4(1f, 1f, 1f, 1f)
   cursorColor = glm.vec4(GLfloat(112/255), GLfloat(128/255), GLfloat(144/255), GLfloat(0.9))
+  tanColor = glm.vec4(GLfloat(209/255), GLfloat(153/255), GLfloat(101/255), GLfloat(1))
   fontSizeStep = 1/16
   minFontSize = 1/8
   maxFontSize = 1
@@ -132,7 +133,7 @@ let rules =
           textHeight = text.monoFont.height * fontSize
           cursorTop = cursorLine.float * textHeight
           cursorBottom = cursorTop + textHeight
-          textViewHeight = windowHeight.float
+          textViewHeight = windowHeight.float - textHeight
           scrollBottom = scrollY + textViewHeight
           documentBottom = lineCount.float * textHeight
         if documentBottom > textViewHeight and scrollY + textViewHeight > documentBottom:
@@ -146,6 +147,7 @@ var
   session* = initSession(Fact)
   nextId* = Id.high.ord + 1
   cursorEntity: TwoDEntity
+  cmdLineEntity: TwoDEntity
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
@@ -197,35 +199,37 @@ proc init*(game: var RootGame) =
   glEnable(GL_BLEND)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-  # init fonts
+  # init font
   text.init(game)
 
-  # init cursor
+  # init entities
   cursorEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
+  cmdLineEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
 
   # set initial values
   session.insert(Global, FontSize, 1/4)
 
 proc tick*(game: RootGame) =
-  let (windowWidth, windowHeight) = session.query(rules.getWindow)
-  let (fontSize) = session.query(rules.getFont)
-  let (vimMode) = session.query(rules.getMode)
-  let currentBufferIndex = session.find(rules.getCurrentBuffer)
+  let
+    (windowWidth, windowHeight) = session.query(rules.getWindow)
+    (fontSize) = session.query(rules.getFont)
+    (vimMode) = session.query(rules.getMode)
+    currentBufferIndex = session.find(rules.getCurrentBuffer)
+    fontWidth = text.monoFont.chars[0].xadvance
+    textWidth = fontWidth * fontSize
+    textHeight = text.monoFont.height * fontSize
 
   glClearColor(bgColor.arr[0], bgColor.arr[1], bgColor.arr[2], bgColor.arr[3])
   glClear(GL_COLOR_BUFFER_BIT)
   glViewport(0, 0, int32(windowWidth), int32(windowHeight))
 
   if currentBufferIndex >= 0:
-    let
-      currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
-      fontWidth = text.monoFont.chars[0].xadvance
-      textWidth = fontWidth * fontSize
-      textHeight = text.monoFont.height * fontSize
+    let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
     var camera = glm.mat3f(1)
     camera.translate(currentBuffer.scrollX, currentBuffer.scrollY)
 
-    block:
+    # cursor
+    if vimMode != libvim.CommandLine.ord:
       var e = cursorEntity
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
@@ -234,6 +238,7 @@ proc tick*(game: RootGame) =
       e.color(cursorColor)
       render(game, e)
 
+    # text
     block:
       let
         linesToSkip = int(currentBuffer.scrollY / textHeight)
@@ -249,3 +254,11 @@ proc tick*(game: RootGame) =
       e.invert(camera)
       e.scale(fontSize, fontSize)
       render(game, e)
+
+  # command line
+  var e = cmdLineEntity
+  e.project(float(windowWidth), float(windowHeight))
+  e.translate(0f, float(windowHeight) - textHeight)
+  e.scale(float(windowWidth), textHeight)
+  e.color(if vimMode == libvim.CommandLine.ord: tanColor else: bgColor)
+  render(game, e)
