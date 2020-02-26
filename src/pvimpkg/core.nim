@@ -250,7 +250,7 @@ proc fontInc*() =
   if newFontSize <= maxFontSize:
     session.insert(Global, FontSize, newFontSize)
 
-proc init*(game: var RootGame, showAscii: bool) =
+proc init*(game: var RootGame, showAscii: bool, density: float) =
   # opengl
   doAssert glInit()
   glEnable(GL_BLEND)
@@ -265,7 +265,7 @@ proc init*(game: var RootGame, showAscii: bool) =
   rectsEntity = compile(game, initInstancedEntity(uncompiledRectEntity))
 
   # set initial values
-  session.insert(Global, FontSize, 1/4)
+  session.insert(Global, FontSize, 1/4 * density)
   let ascii =
     if showAscii:
       let

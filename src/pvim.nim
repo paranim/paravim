@@ -84,12 +84,17 @@ when isMainModule:
   discard w.setMouseButtonCallback(mouseButtonCallback)
   discard w.setCursorPosCallback(cursorPosCallback)
   discard w.setFramebufferSizeCallback(frameSizeCallback)
+
   var width, height: int32
   w.getFramebufferSize(width.addr, height.addr)
   w.frameSizeCallback(width, height)
 
+  var windowWidth, windowHeight: int32
+  w.getWindowSize(windowWidth.addr, windowHeight.addr)
+  let density = max(1, int(width / windowWidth))
+
   var game = gl.RootGame()
-  game.init(params.len == 0)
+  game.init(params.len == 0, float(density))
 
   while not w.windowShouldClose:
     game.tick()
