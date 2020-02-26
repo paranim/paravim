@@ -4,8 +4,8 @@ from paranim/gl/entities import crop, color
 import paratext, paratext/gl/text
 
 const
-  monoFontRaw = staticRead("../assets/ttf/FiraCode-Regular.ttf")
-  variFontRaw = staticRead("../assets/ttf/Roboto-Regular.ttf")
+  monoFontRaw = staticRead("assets/ttf/FiraCode-Regular.ttf")
+  variFontRaw = staticRead("assets/ttf/Roboto-Regular.ttf")
   instancedTextVertexShader = staticRead("shaders/vertex.glsl")
   instancedTextFragmentShader = staticRead("shaders/fragment.glsl")
 
