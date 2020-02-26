@@ -152,7 +152,7 @@ proc vimSetQuitCallback*(callback: QuitCallback) {.cdecl, dynlib: getLib(), impo
 ##  to clear messages or alerts).
 ##
 
-#proc vimSetUnhandledEscapeCallback*(callback: VoidCallback)
+proc vimSetUnhandledEscapeCallback*(callback: VoidCallback) {.cdecl, dynlib: getLib(), importc: "vimSetUnhandledEscapeCallback".}
 ## **
 ##  Options
 ##
@@ -206,9 +206,9 @@ proc vimVisualGetRange*(startPos: ptr pos_T; endPos: ptr pos_T) {.cdecl, dynlib:
 ##  Get highlights for the current search
 ##
 
-#proc vimSearchGetHighlights*(start_lnum: linenr_T; end_lnum: linenr_T;
-#                            num_highlights: ptr cint;
-#                            highlights: ptr ptr searchHighlight_T)
+proc vimSearchGetHighlights*(start_lnum: linenr_T; end_lnum: linenr_T;
+                             num_highlights: ptr cint;
+                             highlights: ptr ptr searchHighlight_T) {.cdecl, dynlib: getLib(), importc: "vimSearchGetHighlights".}
 ##
 ##  vimSearchGetPattern
 ##
@@ -216,7 +216,7 @@ proc vimVisualGetRange*(startPos: ptr pos_T; endPos: ptr pos_T) {.cdecl, dynlib:
 ##
 
 #proc vimSearchGetPattern*(): ptr char_u
-#proc vimSetStopSearchHighlightCallback*(callback: VoidCallback)
+proc vimSetStopSearchHighlightCallback*(callback: VoidCallback) {.cdecl, dynlib: getLib(), importc: "vimSetStopSearchHighlightCallback".}
 ## **
 ##  Window
 ##

@@ -23,6 +23,7 @@ const
   tanColor = glm.vec4(GLfloat(209/255), GLfloat(153/255), GLfloat(101/255), GLfloat(1))
   completionColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.65))
   selectColor = glm.vec4(GLfloat(148/255), GLfloat(69/255), GLfloat(5/255), GLfloat(0.8))
+  searchColor = glm.vec4(Glfloat(127/255), GLfloat(52/255), GLfloat(83/255), GLfloat(0.8))
   fontSizeStep = 1/16
   minFontSize = 1/8
   maxFontSize = 1
@@ -41,12 +42,13 @@ type
     FontSize, CurrentBufferId, BufferUpdate,
     VimMode, VimCommandText, VimCommandStart,
     VimCommandPosition, VimCommandCompletion,
-    VimVisualRange,
+    VimVisualRange, VimSearchRanges, VimShowSearch,
     AsciiArt,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
     LineCount,
   Strings = seq[string]
+  RangeTuples = seq[RangeTuple]
 
 schema Fact(Id, Attr):
   WindowWidth: int
@@ -63,6 +65,8 @@ schema Fact(Id, Attr):
   VimCommandPosition: int
   VimCommandCompletion: string
   VimVisualRange: RangeTuple
+  VimSearchRanges: RangeTuples
+  VimShowSearch: bool
   AsciiArt: string
   BufferId: int
   Lines: Strings
@@ -91,6 +95,8 @@ let rules* =
         (Global, VimCommandPosition, commandPosition)
         (Global, VimCommandCompletion, commandCompletion)
         (Global, VimVisualRange, visualRange)
+        (Global, VimSearchRanges, searchRanges)
+        (Global, VimShowSearch, showSearch)
     rule getCurrentBuffer(Fact):
       what:
         (Global, CurrentBufferId, cb)
@@ -301,6 +307,19 @@ proc tick*(game: RootGame) =
           e2.scale(width, height)
           e2.color(selectColor)
           e.add(e2)
+      # search
+      if vim.showSearch:
+        for highlight in vim.searchRanges:
+          let rects = buffers.rangeToRects(highlight, currentBuffer.lines)
+          for (left, top, width, height) in rects:
+            var e2 = uncompiledRectEntity
+            e2.project(float(windowWidth), float(windowHeight))
+            e2.invert(camera)
+            e2.scale(textWidth, textHeight)
+            e2.translate(left, top)
+            e2.scale(width, height)
+            e2.color(searchColor)
+            e.add(e2)
       if e.instanceCount > 0:
         render(game, e)
     # text

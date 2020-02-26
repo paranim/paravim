@@ -1,4 +1,5 @@
 import libvim, structs, core
+from buffers import nil
 from pararules import nil
 from os import nil
 from strutils import nil
@@ -38,7 +39,10 @@ proc updateCommand(input: string, start: bool) =
   session.insert(Global, VimCommandText, commandText)
   session.insert(Global, VimCommandPosition, commandPos)
   if start:
-    session.insert(Global, VimCommandStart, if not validCommandStarts.contains(input[0]): ":" else: input)
+    let s = if not validCommandStarts.contains(input[0]): ":" else: input
+    session.insert(Global, VimCommandStart, s)
+    if s != ":":
+      session.insert(Global, VimShowSearch, true)
   var completion = ""
   let strippedText = strutils.strip(commandText)
   if strippedText.len > 0 and
@@ -49,12 +53,39 @@ proc updateCommand(input: string, start: bool) =
       count: cint
     vimCommandLineGetCompletions(completions.addr, count.addr)
     if count > 0:
-      let
-        firstPart = cropCommandText(commandText)
+      let firstPart = cropCommandText(commandText)
       completion = firstPart & $ completions[0]
-      for i in 0 ..< count:
-        vimFree(completions[i])
+    for i in 0 ..< count:
+      vimFree(completions[i])
   session.insert(Global, VimCommandCompletion, completion)
+
+proc updateSelection() =
+  if vimVisualIsActive() == 1:
+    var startPos, endPos: pos_T
+    vimVisualGetRange(startPos.addr, endPos.addr)
+    session.insert(Global, VimVisualRange, (int(startPos.lnum-1), int(startPos.col), int(endPos.lnum-1), int(endPos.col)))
+  else:
+    session.insert(Global, VimVisualRange, (0, 0, 0, 0))
+
+proc updateSearchHighlights() =
+  let vim = pararules.query(session, rules.getVim)
+  if vim.commandStart == ":":
+    return
+  var
+    numHighlights: cint
+    highlights: ptr searchHighlight_T
+    ranges: seq[buffers.RangeTuple]
+  vimSearchGetHighlights(1, vimBufferGetLineCount(vimBufferGetCurrent()).clong, numHighlights.addr, highlights.addr)
+  let arr = cast[ptr UncheckedArray[searchHighlight_T]](highlights)
+  for i in 0 ..< numHighlights:
+    ranges.add((
+      startLine: int(arr[i].start.lnum-1),
+      startColumn: int(arr[i].start.col),
+      endLine: int(arr[i].`end`.lnum-1),
+      endColumn: int(arr[i].`end`.col)
+    ))
+  vimFree(highlights)
+  session.insert(Global, VimSearchRanges, ranges)
 
 proc onInput*(input: string) =
   let oldMode = vimGetMode()
@@ -73,12 +104,8 @@ proc onInput*(input: string) =
     session.insert(id, CursorColumn, vimCursorGetColumn())
   if mode == libvim.CommandLine.ord:
     updateCommand(input, oldMode != mode)
-  if vimVisualIsActive() == 1:
-    var startPos, endPos: pos_T
-    vimVisualGetRange(startPos.addr, endPos.addr)
-    session.insert(Global, VimVisualRange, (int(startPos.lnum-1), int(startPos.col), int(endPos.lnum-1), int(endPos.col)))
-  else:
-    session.insert(Global, VimVisualRange, (0, 0, 0, 0))
+    updateSearchHighlights()
+  updateSelection()
 
 proc onBufEnter(buf: buf_T) =
   let
@@ -127,10 +154,16 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   let id = vimBufferGetId(bufferUpdate.buf)
   session.insert(Global, BufferUpdate, (id.int, lines, firstLine.int, bufferUpdate.xtra.int))
 
-proc init*(quitCallback: QuitCallback) =
+proc onStopSearch() {.cdecl.} =
+  session.insert(Global, VimShowSearch, false)
+
+proc init*(onQuit: QuitCallback) =
   vimSetAutoCommandCallback(onAutoCommand)
   vimSetBufferUpdateCallback(onBufferUpdate)
-  vimSetQuitCallback(quitCallback)
+  vimSetQuitCallback(onQuit)
+  vimSetStopSearchHighlightCallback(onStopSearch)
+  vimSetUnhandledEscapeCallback(onStopSearch)
+
   vimInit(0, nil)
   vimExecute("set hidden")
   vimExecute("set noswapfile")
@@ -149,6 +182,8 @@ proc init*(quitCallback: QuitCallback) =
   session.insert(Global, VimCommandPosition, 0)
   session.insert(Global, VimCommandCompletion, "")
   session.insert(Global, VimVisualRange, (0, 0, 0, 0))
+  session.insert(Global, VimSearchRanges, @[])
+  session.insert(Global, VimShowSearch, false)
 
   #let params = os.commandLineParams()
   #for fname in params:
