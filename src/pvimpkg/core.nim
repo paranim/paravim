@@ -156,8 +156,7 @@ var
   nextId* = Id.high.ord + 1
   baseMonoEntity: ptext.UncompiledTextEntity
   monoEntity: text.ParavimTextEntity
-  cursorEntity: TwoDEntity
-  cmdLineEntity: TwoDEntity
+  rectEntity: TwoDEntity
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
@@ -213,8 +212,7 @@ proc init*(game: var RootGame) =
   baseMonoEntity = ptext.initTextEntity(text.monoFont)
   let uncompiledMonoEntity = text.initInstancedEntity(baseMonoEntity, text.monoFont)
   monoEntity = compile(game, uncompiledMonoEntity)
-  cursorEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
-  cmdLineEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
+  rectEntity = compile(game, initTwoDEntity(primitives.rectangle[GLfloat]()))
 
   # set initial values
   session.insert(Global, FontSize, 1/4)
@@ -240,7 +238,7 @@ proc tick*(game: RootGame) =
 
     # cursor
     if vim.mode != libvim.CommandLine.ord:
-      var e = cursorEntity
+      var e = rectEntity
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
       e.translate(currentBuffer.cursorColumn.GLfloat * textWidth, currentBuffer.cursorLine.GLfloat * textHeight)
@@ -267,7 +265,7 @@ proc tick*(game: RootGame) =
 
   # command line background
   block:
-    var e = cmdLineEntity
+    var e = rectEntity
     e.project(float(windowWidth), float(windowHeight))
     e.translate(0f, float(windowHeight) - textHeight)
     e.scale(float(windowWidth), textHeight)
@@ -276,7 +274,7 @@ proc tick*(game: RootGame) =
   if vim.mode == libvim.CommandLine.ord:
     # command line cursor
     block:
-      var e = cursorEntity
+      var e = rectEntity
       e.project(float(windowWidth), float(windowHeight))
       e.translate((vim.commandPosition.float + 1) * textWidth, float(windowHeight) - textHeight)
       e.scale(textWidth / 4, textHeight)
