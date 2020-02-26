@@ -69,7 +69,7 @@ when isMainModule:
   glfwWindowHint(GLFWResizable, GLFW_TRUE)
   glfwWindowHint(GLFWTransparentFramebuffer, GLFW_TRUE)
 
-  let w: GLFWWindow = glfwCreateWindow(1024, 768, "Paravim")
+  let w: GLFWWindow = glfwCreateWindowC(1024, 768, "Paravim", nil, nil)
   if w == nil:
     quit(-1)
 
