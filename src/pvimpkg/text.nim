@@ -117,13 +117,9 @@ proc `[]=`*(instancedEntity: var UncompiledParavimTextEntity, i: int, entity: Un
   setInstanceAttr(instancedEntity.attributes.a_texture_matrix, i, entity.uniforms.u_texture_matrix)
   setInstanceAttr(instancedEntity.attributes.a_color, i, entity.uniforms.u_color)
 
-proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string) =
-  instancedEntity.uniforms.u_char_counts.data.add(0)
-  instancedEntity.uniforms.u_char_counts.disable = false
+proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, startPos: float): float =
   let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
-  var
-    x = 0f
-    i = 0
+  result = startPos
   for ch in text:
     let
       charIndex = int(ch) - font.firstChar
@@ -133,9 +129,13 @@ proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEnti
         else: # if char isn't found, use the space char
           font.chars[0]
     var e = entity
-    e.crop(bakedChar, x, font.baseline)
+    e.crop(bakedChar, result, font.baseline)
     e.color(fontColor)
     instancedEntity.add(e)
     instancedEntity.uniforms.u_char_counts.data[lineNum] += 1
-    x += bakedChar.xadvance
-    i += 1
+    result += bakedChar.xadvance
+
+proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string): float =
+  instancedEntity.uniforms.u_char_counts.data.add(0)
+  instancedEntity.uniforms.u_char_counts.disable = false
+  add(instancedEntity, entity, font, fontColor, text, 0f)

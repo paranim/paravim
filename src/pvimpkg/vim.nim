@@ -1,12 +1,56 @@
 import libvim, structs, core
+from pararules import nil
 from os import nil
 from strutils import nil
 
+proc cropCommandText(commandText: string): string =
+  result = ""
+  let index = strutils.rfind(commandText, ' ')
+  if index >= 0:
+    result = ":" & commandText[0 ..< index]
+
+proc completeCommand() =
+  let vim = pararules.query(session, rules.getVim)
+  if vim.commandText.len == vim.commandPosition:
+    let firstPart = cropCommandText(vim.commandText)
+    # delete everything after the first part of the command
+    for _ in firstPart.len ..< vim.commandText.len:
+      vimInput("<BS>")
+    # input everything from the completion
+    for i in firstPart.len ..< vim.commandCompletion.len:
+      vimInput($ vim.commandCompletion[i])
+
 const validCommandStarts = {':', '?', '/'}
+
+proc updateCommand(input: string, start: bool) =
+  let
+    commandText = $ vimCommandLineGetText()
+    commandPos = vimCommandLineGetPosition()
+  session.insert(Global, VimCommandText, commandText)
+  session.insert(Global, VimCommandPosition, commandPos)
+  if start:
+    session.insert(Global, VimCommandStart, if not validCommandStarts.contains(input[0]): ":" else: input)
+  var completion = ""
+  let strippedText = strutils.strip(commandText)
+  if strippedText.len > 0 and
+     not strutils.startsWith(strippedText, "!") and # don't try to complete shell commands
+     commandText.len == commandPos:
+    var
+      completions: cstringArray
+      count: cint
+    vimCommandLineGetCompletions(completions.addr, count.addr)
+    if count > 0:
+      let
+        firstPart = cropCommandText(commandText)
+      completion = firstPart & $ completions[0]
+  session.insert(Global, VimCommandCompletion, completion)
 
 proc onInput*(input: string) =
   let oldMode = vimGetMode()
-  vimInput(input)
+  if oldMode == libvim.CommandLine.ord and input == "<Tab>":
+    completeCommand()
+  else:
+    vimInput(input)
   let mode = vimGetMode()
   session.insert(Global, VimMode, mode)
   let id = getCurrentSessionId()
@@ -14,10 +58,7 @@ proc onInput*(input: string) =
     session.insert(id, CursorLine, vimCursorGetLine() - 1)
     session.insert(id, CursorColumn, vimCursorGetColumn())
   if mode == libvim.CommandLine.ord:
-    session.insert(Global, VimCommandText, $ vimCommandLineGetText())
-    session.insert(Global, VimCommandPosition, vimCommandLineGetPosition())
-    if oldMode != mode:
-      session.insert(Global, VimCommandStart, if not validCommandStarts.contains(input[0]): ":" else: input)
+    updateCommand(input, oldMode != mode)
 
 proc onBufEnter(buf: buf_T) =
   let
@@ -84,8 +125,9 @@ proc init*(quitCallback: QuitCallback) =
 
   session.insert(Global, VimMode, vimGetMode())
   session.insert(Global, VimCommandText, "")
-  session.insert(Global, VimCommandPosition, 0)
   session.insert(Global, VimCommandStart, "")
+  session.insert(Global, VimCommandPosition, 0)
+  session.insert(Global, VimCommandCompletion, "")
 
   #let params = os.commandLineParams()
   #for fname in params:

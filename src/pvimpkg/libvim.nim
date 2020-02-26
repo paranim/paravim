@@ -91,7 +91,7 @@ proc vimSetAutoCommandCallback*(autoCommandDispatch: AutoCommandCallback) {.cdec
 #proc vimCommandLineGetType*(): char_u
 proc vimCommandLineGetText*(): ptr char_u {.cdecl, dynlib: getLib(), importc: "vimCommandLineGetText".}
 proc vimCommandLineGetPosition*(): cint {.cdecl, dynlib: getLib(), importc: "vimCommandLineGetPosition".}
-#proc vimCommandLineGetCompletions*(completions: ptr ptr ptr char_u; count: ptr cint)
+proc vimCommandLineGetCompletions*(completions: ptr cstringArray; count: ptr cint) {.cdecl, dynlib: getLib(), importc: "vimCommandLineGetCompletions".}
 ## **
 ##  Cursor Methods
 ## *

@@ -17,6 +17,7 @@ const
   textColor = glm.vec4(1f, 1f, 1f, 1f)
   cursorColor = glm.vec4(GLfloat(112/255), GLfloat(128/255), GLfloat(144/255), GLfloat(0.9))
   tanColor = glm.vec4(GLfloat(209/255), GLfloat(153/255), GLfloat(101/255), GLfloat(1))
+  completionColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.65))
   fontSizeStep = 1/16
   minFontSize = 1/8
   maxFontSize = 1
@@ -28,7 +29,8 @@ type
     WindowWidth, WindowHeight,
     MouseClick, MouseX, MouseY,
     FontSize, CurrentBufferId, BufferUpdate,
-    VimMode, VimCommandText, VimCommandStart, VimCommandPosition,
+    VimMode, VimCommandText, VimCommandStart,
+    VimCommandPosition, VimCommandCompletion,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
     LineCount,
@@ -47,6 +49,7 @@ schema Fact(Id, Attr):
   VimCommandText: string
   VimCommandStart: string
   VimCommandPosition: int
+  VimCommandCompletion: string
   BufferId: int
   Lines: Strings
   Path: string
@@ -56,7 +59,7 @@ schema Fact(Id, Attr):
   ScrollY: float
   LineCount: int
 
-let rules =
+let rules* =
   ruleset:
     rule getWindow(Fact):
       what:
@@ -71,6 +74,7 @@ let rules =
         (Global, VimCommandText, commandText)
         (Global, VimCommandStart, commandStart)
         (Global, VimCommandPosition, commandPosition)
+        (Global, VimCommandCompletion, commandCompletion)
     rule getCurrentBuffer(Fact):
       what:
         (Global, CurrentBufferId, cb)
@@ -257,7 +261,7 @@ proc tick*(game: RootGame) =
       for i in linesToSkip ..< linesToSkip + visibleLines:
         if i >= currentBuffer.lines.len:
           break
-        text.addLine(e, baseMonoEntity, text.monoFont, textColor, currentBuffer.lines[i])
+        discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, currentBuffer.lines[i])
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
       e.scale(fontSize, fontSize)
@@ -285,7 +289,13 @@ proc tick*(game: RootGame) =
       var e = deepCopy(monoEntity)
       e.uniforms.u_start_line.data = 0
       e.uniforms.u_start_line.disable = false
-      text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText)
+      let endPos = text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText)
+      if vim.commandCompletion != "":
+        let
+          compLen = vim.commandCompletion.len
+          commLen = vim.commandText.len
+        if compLen > commLen:
+          discard text.add(e, baseMonoEntity, text.monoFont, completionColor, vim.commandCompletion[commLen ..< compLen], endPos)
       e.project(float(windowWidth), float(windowHeight))
       e.translate(0f, float(windowHeight) - textHeight)
       e.scale(fontSize, fontSize)
