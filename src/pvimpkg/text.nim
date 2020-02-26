@@ -5,13 +5,10 @@ import paratext, paratext/gl/text
 
 const
   monoFontRaw = staticRead("assets/ttf/FiraCode-Regular.ttf")
-  variFontRaw = staticRead("assets/ttf/Roboto-Regular.ttf")
   instancedTextVertexShader = staticRead("shaders/vertex.glsl")
   instancedTextFragmentShader = staticRead("shaders/fragment.glsl")
 
-let
-  monoFont* = initFont(ttf = monoFontRaw, fontHeight = 128, firstChar = 32, bitmapWidth = 1024, bitmapHeight = 1024, charCount = 2048)
-  variFont* = initFont(ttf = variFontRaw, fontHeight = 128, firstChar = 32, bitmapWidth = 1024, bitmapHeight = 1024, charCount = 2048)
+let monoFont* = initFont(ttf = monoFontRaw, fontHeight = 128, firstChar = 32, bitmapWidth = 1024, bitmapHeight = 1024, charCount = 2048)
 
 type
   ParavimTextEntityUniforms = tuple[
