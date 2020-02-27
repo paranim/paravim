@@ -6,7 +6,7 @@ import tables
 
 proc cropCommandText(commandText: string): string =
   result = ""
-  let index = strutils.rfind(commandText, ' ')
+  let index = strutils.find(commandText, ' ')
   if index >= 0:
     result = ":" & commandText[0 ..< index]
 
