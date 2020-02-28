@@ -15,4 +15,5 @@ Then, as long as you have `~/.nimble/bin` on your PATH, you should be able to ru
 A few notes for linux users:
 
 1. On Ubuntu, if pvim fails to build, you may need to install X11 and OpenGL related libraries with `sudo apt install xorg-dev libgl1-mesa-dev`
-2. On Arch, if pvim fails to load, you may need to do `sudo ln -s /usr/lib/libtinfo.so.6 /usr/lib/libtinfo.so.5`
+2. On Ubuntu, if pvim fails to load, try `sudo apt install libtinfo5`
+3. On Arch, if pvim fails to load, you may need to do `sudo ln -s /usr/lib/libtinfo.so.6 /usr/lib/libtinfo.so.5`
