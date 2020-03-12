@@ -5,13 +5,15 @@ author        = "oakes"
 description   = "A parasitic editor"
 license       = "Public Domain"
 srcDir        = "src"
-installExt    =
+installExt    = @[
+  "nim", "txt", "ttf", "glsl",
   when defined(windows):
-    @["dll", "nim"]
+    "dll"
   elif defined(macosx):
-    @["dylib", "nim"]
+    "dylib"
   elif defined(linux):
-    @["so", "nim"]
+    "so"
+]
 bin           = @["pvim"]
 
 
