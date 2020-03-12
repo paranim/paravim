@@ -7,11 +7,11 @@ license       = "Public Domain"
 srcDir        = "src"
 installExt    =
   when defined(windows):
-    @["dll"]
+    @["dll", "nim"]
   elif defined(macosx):
-    @["dylib"]
+    @["dylib", "nim"]
   elif defined(linux):
-    @["so"]
+    @["so", "nim"]
 bin           = @["pvim"]
 
 
