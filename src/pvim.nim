@@ -1,6 +1,6 @@
 import nimgl/glfw
 from paranim/gl import nil
-import pvimpkg/core
+from pvimpkg/core import nil
 from pvimpkg/vim import nil
 import tables
 import bitops
@@ -30,34 +30,53 @@ const glfwToVimChars =
    GLFWKey.R: "R",
    GLFWKey.U: "U"}.toTable
 
-proc keyCallback(window: GLFWWindow, key: int32, scancode: int32,
-                 action: int32, mods: int32) {.cdecl.} =
+proc keyCallback*(window: GLFWWindow, key: int32, scancode: int32,
+                  action: int32, mods: int32) {.cdecl.} =
   if action == GLFW_PRESS:
     let
       isControl = 0 != bitand(mods, GLFW_MOD_CONTROL)
       isShift = 0 != bitand(mods, GLFW_MOD_SHIFT)
     if isControl:
       if key == GLFWKey.Minus:
-        fontDec()
+        core.fontDec()
       elif key == GLFWKey.Equal:
-        fontInc()
+        core.fontInc()
       elif glfwToVimChars.hasKey(key):
         vim.onInput("<C-" & (if isShift: "S-" else: "") & glfwToVimChars[key] & ">")
     elif glfwToVimSpecials.hasKey(key):
       vim.onInput("<" & glfwToVimSpecials[key] & ">")
 
-proc charCallback(window: GLFWWindow, codepoint: uint32) {.cdecl.} =
+proc charCallback*(window: GLFWWindow, codepoint: uint32) {.cdecl.} =
   vim.onInput("" & char(codepoint))
 
-proc mouseButtonCallback(window: GLFWWindow, button: int32, action: int32, mods: int32) {.cdecl.} =
+proc mouseButtonCallback*(window: GLFWWindow, button: int32, action: int32, mods: int32) {.cdecl.} =
   if action == GLFWPress:
-    onMouseClick(button)
+    core.onMouseClick(button)
 
-proc cursorPosCallback(window: GLFWWindow, xpos: float64, ypos: float64) {.cdecl.} =
-  onMouseMove(xpos, ypos)
+proc cursorPosCallback*(window: GLFWWindow, xpos: float64, ypos: float64) {.cdecl.} =
+  core.onMouseMove(xpos, ypos)
 
-proc frameSizeCallback(window: GLFWWindow, width: int32, height: int32) {.cdecl.} =
-  onWindowResize(width, height)
+proc frameSizeCallback*(window: GLFWWindow, width: int32, height: int32) {.cdecl.} =
+  core.onWindowResize(width, height)
+
+proc init(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
+  vim.init(params, proc (buf: pointer; isForced: cint) {.cdecl.} = quit(0))
+
+  var width, height: int32
+  w.getFramebufferSize(width.addr, height.addr)
+  w.frameSizeCallback(width, height)
+
+  var windowWidth, windowHeight: int32
+  w.getWindowSize(windowWidth.addr, windowHeight.addr)
+  let density = max(1, int(width / windowWidth))
+
+  core.init(game, params.len == 0, float(density))
+
+proc init*(game: var gl.RootGame, w: GLFWWindow) =
+  init(game, w, @[])
+
+proc tick*(game: gl.RootGame) =
+  core.tick(game, false)
 
 when isMainModule:
   doAssert glfwInit()
@@ -73,9 +92,6 @@ when isMainModule:
   if w == nil:
     quit(-1)
 
-  let params = os.commandLineParams()
-  vim.init(params, proc (buf: pointer; isForced: cint) {.cdecl.} = w.setWindowShouldClose(true))
-
   w.makeContextCurrent()
   glfwSwapInterval(1)
 
@@ -85,19 +101,12 @@ when isMainModule:
   discard w.setCursorPosCallback(cursorPosCallback)
   discard w.setFramebufferSizeCallback(frameSizeCallback)
 
-  var width, height: int32
-  w.getFramebufferSize(width.addr, height.addr)
-  w.frameSizeCallback(width, height)
-
-  var windowWidth, windowHeight: int32
-  w.getWindowSize(windowWidth.addr, windowHeight.addr)
-  let density = max(1, int(width / windowWidth))
-
   var game = gl.RootGame()
-  game.init(params.len == 0, float(density))
+  let params = os.commandLineParams()
+  init(game, w, params)
 
   while not w.windowShouldClose:
-    game.tick()
+    core.tick(game, true)
     w.swapBuffers()
     glfwPollEvents()
 

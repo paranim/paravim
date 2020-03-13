@@ -279,7 +279,7 @@ proc init*(game: var RootGame, showAscii: bool, density: float) =
       ""
   session.insert(Global, AsciiArt, ascii)
 
-proc tick*(game: RootGame) =
+proc tick*(game: RootGame, clear: bool) =
   let
     (windowWidth, windowHeight, ascii) = session.query(rules.getWindow)
     (fontSize) = session.query(rules.getFont)
@@ -290,8 +290,17 @@ proc tick*(game: RootGame) =
     textWidth = fontWidth * fontSize
     textHeight = fontHeight * fontSize
 
-  glClearColor(bgColor.arr[0], bgColor.arr[1], bgColor.arr[2], bgColor.arr[3])
-  glClear(GL_COLOR_BUFFER_BIT)
+  if clear:
+    glClearColor(bgColor.arr[0], bgColor.arr[1], bgColor.arr[2], bgColor.arr[3])
+    glClear(GL_COLOR_BUFFER_BIT)
+  else:
+    var e = rectEntity
+    e.project(float(windowWidth), float(windowHeight))
+    e.translate(0f, 0f)
+    e.scale(float(windowWidth), float(windowHeight))
+    e.color(bgColor)
+    render(game, e)
+
   glViewport(0, 0, int32(windowWidth), int32(windowHeight))
 
   if ascii != "":
