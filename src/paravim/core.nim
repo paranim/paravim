@@ -14,6 +14,7 @@ from libvim import nil
 import tables
 from strutils import nil
 from times import nil
+import tree_sitter
 
 const
   bgColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
