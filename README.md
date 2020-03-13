@@ -1,1 +1,1 @@
-This is a library form of the [pvim](https://github.com/paranim/pvim) editor, allowing you to embed it within a [paranim](https://github.com/paranim/paranim) game.
+This repo is the core of the [pvim](https://github.com/paranim/pvim) editor as a library, allowing you to embed it within a [paranim](https://github.com/paranim/paranim) game. You can try it by running the [parakeet](https://github.com/paranim/parakeet) example or any of the other [paranim examples](https://github.com/paranim/paranim_examples) via `nimble run`, and then hitting `Esc` when the window appears.
