@@ -60,7 +60,7 @@ proc cursorPosCallback*(window: GLFWWindow, xpos: float64, ypos: float64) {.cdec
 proc frameSizeCallback*(window: GLFWWindow, width: int32, height: int32) {.cdecl.} =
   core.onWindowResize(width, height)
 
-proc init(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
+proc init*(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
   vim.init(params, proc (buf: pointer; isForced: cint) {.cdecl.} = quit(0))
 
   var width, height: int32
