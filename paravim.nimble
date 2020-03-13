@@ -14,7 +14,6 @@ installExt    = @[
   elif defined(linux):
     "so"
 ]
-bin           = @["pvim"]
 
 
 

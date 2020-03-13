@@ -1,8 +1,8 @@
 import nimgl/glfw
 from paranim/gl import nil
-from pvimpkg/core import nil
-from pvimpkg/vim import nil
-from pvimpkg/libvim import nil
+from paravim/core import nil
+from paravim/vim import nil
+from paravim/libvim import nil
 import tables
 import bitops
 from os import nil

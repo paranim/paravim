@@ -6,8 +6,8 @@
 # To run these tests, simply execute `nimble test`.
 
 import unittest
-import pvimpkg/libvim
-from pvimpkg/vim import nil
+import paravim/libvim
+from paravim/vim import nil
 
 vim.init(@[], nil)
 
