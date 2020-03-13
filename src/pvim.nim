@@ -2,6 +2,7 @@ import nimgl/glfw
 from paranim/gl import nil
 from pvimpkg/core import nil
 from pvimpkg/vim import nil
+from pvimpkg/libvim import nil
 import tables
 import bitops
 from os import nil
@@ -77,6 +78,9 @@ proc init*(game: var gl.RootGame, w: GLFWWindow) =
 
 proc tick*(game: gl.RootGame) =
   core.tick(game, false)
+
+proc isNormalMode*(): bool =
+  libvim.vimGetMode() in {libvim.Normal.ord, libvim.NormalBusy.ord}
 
 when isMainModule:
   doAssert glfwInit()
