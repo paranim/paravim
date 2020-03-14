@@ -15,8 +15,7 @@ installExt    = @[
     "so"
 ]
 
-task dev, "Run dev version":
-  exec "nim c -r dev.nim"
+
 
 # Dependencies
 
