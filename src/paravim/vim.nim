@@ -117,18 +117,18 @@ proc onBufEnter(buf: buf_T) =
     if sessionId == -1:
       sessionId = nextId
       nextId += 1
-      var lines: seq[string]
-      for i in 0 ..< count:
-        let line = vimBufferGetLine(buf, linenr_T(i+1))
-        lines.add($ line)
-      session.insert(sessionId, BufferId, bufferId)
-      session.insert(sessionId, Path, $ path)
-      session.insert(sessionId, Lines, lines)
-      session.insert(sessionId, CursorLine, vimCursorGetLine() - 1)
-      session.insert(sessionId, CursorColumn, vimCursorGetColumn())
-      session.insert(sessionId, ScrollX, 0f)
-      session.insert(sessionId, ScrollY, 0f)
-      session.insert(sessionId, LineCount, count)
+    var lines: seq[string]
+    for i in 0 ..< count:
+      let line = vimBufferGetLine(buf, linenr_T(i+1))
+      lines.add($ line)
+    session.insert(sessionId, BufferId, bufferId)
+    session.insert(sessionId, Path, $ path)
+    session.insert(sessionId, Lines, lines)
+    session.insert(sessionId, CursorLine, vimCursorGetLine() - 1)
+    session.insert(sessionId, CursorColumn, vimCursorGetColumn())
+    session.insert(sessionId, ScrollX, 0f)
+    session.insert(sessionId, ScrollY, 0f)
+    session.insert(sessionId, LineCount, count)
 
 proc onBufDelete(buf: buf_T) =
   let bufferId = vimBufferGetId(buf)
