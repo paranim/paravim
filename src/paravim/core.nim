@@ -111,6 +111,12 @@ let rules* =
     rule getBuffer(Fact):
       what:
         (id, BufferId, bufferId)
+        (id, Lines, lines)
+        (id, CursorLine, cursorLine)
+        (id, CursorColumn, cursorColumn)
+        (id, ScrollX, scrollX)
+        (id, ScrollY, scrollY)
+        (id, LineCount, lineCount)
     rule deleteBuffer(Fact):
       what:
         (Global, DeleteBuffer, bufferId)
@@ -210,13 +216,6 @@ proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
   if index >= 0:
     session.get(rules.getCurrentBuffer, index).id
-  else:
-    -1
-
-proc getSessionId*(bufferId: int): int =
-  let index = session.find(rules.getBuffer, bufferId = bufferId)
-  if index >= 0:
-    session.get(rules.getBuffer, index).id
   else:
     -1
 

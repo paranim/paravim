@@ -112,15 +112,25 @@ proc onBufEnter(buf: buf_T) =
     path = vimBufferGetFilename(buf)
     count = vimBufferGetLineCount(buf)
   session.insert(Global, CurrentBufferId, bufferId)
-  var sessionId = getSessionId(bufferId)
+  let index = pararules.find(session, rules.getBuffer, bufferId = bufferId)
   if path != nil:
-    if sessionId == -1:
-      sessionId = nextId
-      nextId += 1
+    # get lines
     var lines: seq[string]
     for i in 0 ..< count:
       let line = vimBufferGetLine(buf, linenr_T(i+1))
       lines.add($ line)
+    # get or create session id
+    var sessionId: int
+    if index >= 0:
+      let existingBuffer = pararules.get(session, rules.getBuffer, index)
+      sessionId = existingBuffer.id
+      # if the content hasn't changed, no need to update the buffer
+      if existingBuffer.lines == lines:
+        return
+    else:
+      sessionId = nextId
+      nextId += 1
+    # update or insert buffer
     session.insert(sessionId, BufferId, bufferId)
     session.insert(sessionId, Path, $ path)
     session.insert(sessionId, Lines, lines)
