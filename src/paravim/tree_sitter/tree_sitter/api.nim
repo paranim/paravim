@@ -129,6 +129,7 @@ proc ts_parser_new*(): pointer {.cdecl, importc: "ts_parser_new".}
 ##
 
 #proc ts_parser_set_language*(self: ptr TSParser; language: ptr TSLanguage): bool
+proc ts_parser_set_language*(self: pointer; language: pointer): bool {.cdecl, importc: "ts_parser_set_language".}
 ## *
 ##  Get the parser's current language.
 ##
