@@ -1,3 +1,5 @@
+import tree_sitter
+
 type
   BufferUpdateTuple* = tuple[bufferId: int, lines: seq[string], firstLine: int, lineCountChange: int]
   RangeTuple* = tuple[startLine: int, startColumn: int, endLine: int, endColumn: int]
