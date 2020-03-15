@@ -14,6 +14,7 @@ from libvim import nil
 import tables
 from strutils import nil
 from times import nil
+from tree_sitter import nil
 
 const
   bgColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
@@ -47,7 +48,7 @@ type
     AsciiArt, DeleteBuffer,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
-    LineCount,
+    LineCount, Tree,
   Strings = seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
@@ -81,6 +82,7 @@ schema Fact(Id, Attr):
   ScrollX: float
   ScrollY: float
   LineCount: int
+  Tree: pointer
 
 let rules* =
   ruleset:
@@ -118,6 +120,7 @@ let rules* =
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
+        (id, Tree, tree)
     rule getBuffer(Fact):
       what:
         (id, BufferId, bufferId)
@@ -127,6 +130,7 @@ let rules* =
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
+        (id, Tree, tree)
     rule deleteBuffer(Fact):
       what:
         (Global, DeleteBuffer, bufferId)
@@ -212,6 +216,11 @@ let rules* =
           session.insert(id, ScrollY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
           session.insert(id, ScrollY, cursorBottom - textViewHeight)
+    rule updateTree(Fact):
+      what:
+        (id, Tree, tree)
+      then:
+        tree_sitter.echoTree tree
 
 var
   session* = initSession(Fact)

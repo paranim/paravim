@@ -117,6 +117,7 @@ proc ts_parser_new*(): pointer {.cdecl, importc: "ts_parser_new".}
 ##
 
 #proc ts_parser_delete*(parser: ptr TSParser)
+proc ts_parser_delete*(parser: pointer) {.cdecl, importc: "ts_parser_delete".}
 ## *
 ##  Set the language that the parser should use for parsing.
 ##
@@ -219,6 +220,8 @@ proc ts_parser_set_language*(self: pointer; language: pointer): bool {.cdecl, im
 
 #proc ts_parser_parse_string*(self: ptr TSParser; old_tree: ptr TSTree; string: cstring;
 #                            length: uint32_t): ptr TSTree
+proc ts_parser_parse_string*(self: pointer; old_tree: pointer; string: cstring;
+                            length: uint32_t): pointer {.cdecl, importc: "ts_parser_parse_string".}
 ## *
 ##  Use the parser to parse some source code stored in one contiguous buffer with
 ##  a given encoding. The first four parameters work the same as in the
@@ -306,11 +309,13 @@ proc ts_parser_set_language*(self: pointer; language: pointer): bool {.cdecl, im
 ##
 
 #proc ts_tree_delete*(self: ptr TSTree)
+proc ts_tree_delete*(self: pointer) {.cdecl, importc: "ts_tree_delete".}
 ## *
 ##  Get the root node of the syntax tree.
 ##
 
 #proc ts_tree_root_node*(self: ptr TSTree): TSNode
+proc ts_tree_root_node*(self: pointer): TSNode {.cdecl, importc: "ts_tree_root_node".}
 ## *
 ##  Get the language that was used to parse the syntax tree.
 ##
@@ -388,6 +393,7 @@ proc ts_parser_set_language*(self: pointer; language: pointer): bool {.cdecl, im
 ##
 
 #proc ts_node_string*(a1: TSNode): cstring
+proc ts_node_string*(a1: TSNode): cstring {.cdecl, importc: "ts_node_string".}
 ## *
 ##  Check if the node is null. Functions like `ts_node_child` and
 ##  `ts_node_next_sibling` will return a null node to indicate that no such node

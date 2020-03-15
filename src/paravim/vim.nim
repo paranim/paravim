@@ -3,6 +3,7 @@ from buffers import nil
 from pararules import nil
 from strutils import nil
 from os import nil
+from tree_sitter import nil
 import tables
 
 proc cropCommandText(commandText: string): string =
@@ -116,6 +117,7 @@ proc onBufEnter(buf: buf_T) =
   session.insert(Global, WindowTitle, if path == nil: "Paravim" else: os.extractFilename($ path) & " - Paravim")
   let index = pararules.find(session, rules.getBuffer, bufferId = bufferId)
   if path != nil:
+    let pathStr = $ path
     # get lines
     var lines: seq[string]
     for i in 0 ..< count:
@@ -125,22 +127,25 @@ proc onBufEnter(buf: buf_T) =
     var sessionId: int
     if index >= 0:
       let existingBuffer = pararules.get(session, rules.getBuffer, index)
-      sessionId = existingBuffer.id
       # if the content hasn't changed, no need to update the buffer
       if existingBuffer.lines == lines:
         return
+      else:
+        tree_sitter.deleteTree(existingBuffer.tree)
+        sessionId = existingBuffer.id
     else:
       sessionId = nextId
       nextId += 1
     # update or insert buffer
     session.insert(sessionId, BufferId, bufferId)
-    session.insert(sessionId, Path, $ path)
+    session.insert(sessionId, Path, pathStr)
     session.insert(sessionId, Lines, lines)
     session.insert(sessionId, CursorLine, vimCursorGetLine() - 1)
     session.insert(sessionId, CursorColumn, vimCursorGetColumn())
     session.insert(sessionId, ScrollX, 0f)
     session.insert(sessionId, ScrollY, 0f)
     session.insert(sessionId, LineCount, count)
+    session.insert(sessionId, Tree, tree_sitter.createTree(pathStr, lines))
 
 proc onBufDelete(buf: buf_T) =
   let bufferId = vimBufferGetId(buf)
