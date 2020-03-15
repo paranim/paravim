@@ -4,7 +4,7 @@ import paranim/gl, paranim/gl/entities
 from paranim/primitives import nil
 from paranim/math as pmath import translate
 import pararules
-from text import nil
+from text import ParavimTextEntity
 from paratext/gl/text as ptext import nil
 from buffers import BufferUpdateTuple, RangeTuple
 import sets
@@ -14,7 +14,6 @@ from libvim import nil
 import tables
 from strutils import nil
 from times import nil
-from tree_sitter import nil
 
 const
   bgColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
@@ -48,7 +47,7 @@ type
     AsciiArt, DeleteBuffer,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
-    LineCount, Tree,
+    LineCount, Tree, Text,
   Strings = seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
@@ -83,6 +82,7 @@ schema Fact(Id, Attr):
   ScrollY: float
   LineCount: int
   Tree: pointer
+  Text: ParavimTextEntity
 
 let rules* =
   ruleset:
@@ -121,6 +121,7 @@ let rules* =
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
+        (id, Text, text)
     rule getBuffer(Fact):
       what:
         (id, BufferId, bufferId)
@@ -131,6 +132,7 @@ let rules* =
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
+        (id, Text, text)
     rule deleteBuffer(Fact):
       what:
         (Global, DeleteBuffer, bufferId)
@@ -219,14 +221,16 @@ let rules* =
     rule updateTree(Fact):
       what:
         (id, Tree, tree)
+        (id, Lines, lines, then = false)
+        (id, Text, text, then = false)
       then:
-        tree_sitter.echoTree tree
+        buffers.setText(text, lines, tree)
 
 var
   session* = initSession(Fact)
   nextId* = Id.high.ord + 1
   baseMonoEntity: ptext.UncompiledTextEntity
-  monoEntity: text.ParavimTextEntity
+  monoEntity*: ParavimTextEntity
   uncompiledRectEntity: UncompiledTwoDEntity
   rectEntity: TwoDEntity
   rectsEntity: InstancedTwoDEntity
@@ -377,7 +381,7 @@ proc tick*(game: RootGame, clear: bool) =
       let
         linesToSkip = int(currentBuffer.scrollY / textHeight)
         visibleLines = int(windowHeight.float / textHeight) + 1
-      var e = deepCopy(monoEntity)
+      var e = deepCopy(currentBuffer.text)
       e.uniforms.u_start_line.data = linesToSkip.int32
       e.uniforms.u_start_line.disable = false
       for i in linesToSkip ..< linesToSkip + visibleLines:

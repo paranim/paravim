@@ -359,7 +359,7 @@ proc ts_tree_root_node*(self: pointer): TSNode {.cdecl, importc: "ts_tree_root_n
 ##  Get the node's type as a null-terminated string.
 ##
 
-#proc ts_node_type*(a1: TSNode): cstring
+proc ts_node_type*(a1: TSNode): cstring {.cdecl, importc: "ts_node_type".}
 ## *
 ##  Get the node's type as a numerical id.
 ##
@@ -374,7 +374,7 @@ proc ts_tree_root_node*(self: pointer): TSNode {.cdecl, importc: "ts_tree_root_n
 ##  Get the node's start position in terms of rows and columns.
 ##
 
-#proc ts_node_start_point*(a1: TSNode): TSPoint
+proc ts_node_start_point*(a1: TSNode): TSPoint {.cdecl, importc: "ts_node_start_point".}
 ## *
 ##  Get the node's end byte.
 ##
@@ -384,7 +384,7 @@ proc ts_tree_root_node*(self: pointer): TSNode {.cdecl, importc: "ts_tree_root_n
 ##  Get the node's end position in terms of rows and columns.
 ##
 
-#proc ts_node_end_point*(a1: TSNode): TSPoint
+proc ts_node_end_point*(a1: TSNode): TSPoint {.cdecl, importc: "ts_node_start_point".}
 ## *
 ##  Get an S-expression representing the node as a string.
 ##
@@ -440,12 +440,12 @@ proc ts_node_string*(a1: TSNode): cstring {.cdecl, importc: "ts_node_string".}
 ##  child.
 ##
 
-#proc ts_node_child*(a1: TSNode; a2: uint32_t): TSNode
+proc ts_node_child*(a1: TSNode; a2: uint32_t): TSNode {.cdecl, importc: "ts_node_child".}
 ## *
 ##  Get the node's number of children.
 ##
 
-#proc ts_node_child_count*(a1: TSNode): uint32_t
+proc ts_node_child_count*(a1: TSNode): uint32_t {.cdecl, importc: "ts_node_child_count".}
 ## *
 ##  Get the node's *named* child at the given index.
 ##

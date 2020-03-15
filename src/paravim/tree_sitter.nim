@@ -34,3 +34,29 @@ proc echoTree*(tree: pointer) =
     free(sexpr)
   else:
     echo "nil"
+
+type
+  RangeTuple = tuple[startLine: uint32, startColumn: uint32, endLine: uint32, endColumn: uint32]
+
+proc parse*(node: TSNode, nodes: var seq[tuple[kind: string, location: RangeTuple]]) =
+  let
+    kind = $ ts_node_type(node)
+  case kind:
+    of "string":
+      let
+        startPoint = ts_node_start_point(node)
+        childCount = ts_node_child_count(node)
+      var endPoint = ts_node_end_point(node)
+      if childCount > 0.uint32:
+        let child = ts_node_child(node, childCount - 1)
+        endPoint = ts_node_end_point(child)
+      nodes.add((kind: kind, location: (startPoint.row, startPoint.column, endPoint.row, endPoint.column)))
+    else:
+      for i in 0 ..< ts_node_child_count(node):
+        let child = ts_node_child(node, i)
+        parse(child, nodes)
+
+proc parse*(tree: pointer): seq[tuple[kind: string, location: RangeTuple]] =
+  if tree != nil:
+    let node = ts_tree_root_node(tree)
+    parse(node, result)

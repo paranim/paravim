@@ -146,6 +146,7 @@ proc onBufEnter(buf: buf_T) =
     session.insert(sessionId, ScrollY, 0f)
     session.insert(sessionId, LineCount, count)
     session.insert(sessionId, Tree, tree_sitter.createTree(pathStr, lines))
+    session.insert(sessionId, Text, deepCopy(monoEntity))
 
 proc onBufDelete(buf: buf_T) =
   let bufferId = vimBufferGetId(buf)

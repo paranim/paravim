@@ -1,3 +1,6 @@
+from tree_sitter import nil
+from text import nil
+
 type
   BufferUpdateTuple* = tuple[bufferId: int, lines: seq[string], firstLine: int, lineCountChange: int]
   RangeTuple* = tuple[startLine: int, startColumn: int, endLine: int, endColumn: int]
@@ -50,3 +53,6 @@ proc rangeToRects*(rangeData: RangeTuple, lines: seq[string]): seq[RectTuple] =
       width: float(endCol - startCol),
       height: 1.float
     ))
+
+proc setText*(entity: text.ParavimTextEntity, lines: seq[string], tree: pointer) =
+  echo tree_sitter.parse(tree)
