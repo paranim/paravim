@@ -245,11 +245,12 @@ let rules* =
         (id, Tree, tree)
         (id, Lines, lines)
       then:
-        let parsed = tree_sitter.parse(tree)
-        var e = deepCopy(monoEntity)
-        for i in 0 ..< lines.len:
-          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
-        session.insert(id, FullText, e)
+        when not defined(paravimtest):
+          let parsed = tree_sitter.parse(tree)
+          var e = deepCopy(monoEntity)
+          for i in 0 ..< lines.len:
+            discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
+          session.insert(id, FullText, e)
     rule updateCroppedText(Fact):
       what:
         (Global, WindowHeight, windowHeight)
