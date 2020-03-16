@@ -2,7 +2,6 @@ import nimgl/opengl
 from tree_sitter import nil
 from text import nil
 from paratext/gl/text as ptext import nil
-import colors
 from math import nil
 
 type
@@ -64,8 +63,3 @@ proc getVisibleChars*(entity: text.ParavimTextEntity, linesToSkip: int, linesToC
   charCounts = charCounts[linesToSkip ..< linesToCrop]
   let charsToCrop = charsToSkip + math.sum(charCounts)
   (charsToSkip, charsToCrop, charCounts)
-
-proc setText*(entity: var text.ParavimTextEntity, baseEntity: ptext.UncompiledTextEntity, lines: seq[string], tree: pointer) =
-  for line in lines:
-    discard text.addLine(entity, baseEntity, text.monoFont, textColor, line)
-  #echo tree_sitter.parse(tree)

@@ -5,6 +5,7 @@
 import tree_sitter/tree_sitter/api
 from os import nil
 from strutils import nil
+import tables
 
 proc free(p: pointer) {.cdecl, importc: "free".}
 proc tree_sitter_javascript(): pointer {.cdecl, importc: "tree_sitter_javascript".}
@@ -36,13 +37,12 @@ proc echoTree*(tree: pointer) =
     echo "nil"
 
 type
-  RangeTuple = tuple[startLine: uint32, startColumn: uint32, endLine: uint32, endColumn: uint32]
+  Node* = tuple[kind: string, startCol: int, endCol: int]
 
-proc parse*(node: TSNode, nodes: var seq[tuple[kind: string, location: RangeTuple]]) =
-  let
-    kind = $ ts_node_type(node)
+proc parse*(node: TSNode, nodes: var Table[int, seq[Node]]) =
+  let kind = $ ts_node_type(node)
   case kind:
-    of "string":
+    of "string", "template_string":
       let
         startPoint = ts_node_start_point(node)
         childCount = ts_node_child_count(node)
@@ -50,13 +50,22 @@ proc parse*(node: TSNode, nodes: var seq[tuple[kind: string, location: RangeTupl
       if childCount > 0.uint32:
         let child = ts_node_child(node, childCount - 1)
         endPoint = ts_node_end_point(child)
-      nodes.add((kind: kind, location: (startPoint.row, startPoint.column, endPoint.row, endPoint.column)))
+      for line in startPoint.row .. endPoint.row:
+        let
+          lineNum = line.int
+          startLine = startPoint.row.int
+          endLine = endPoint.row.int
+          startCol = if lineNum == startLine: startPoint.column.int else: 0
+          endCol = if lineNum == endLine: endPoint.column.int else: -1
+        if not nodes.hasKey(lineNum):
+          nodes[lineNum] = @[]
+        nodes[lineNum].add((kind, startCol, endCol))
     else:
       for i in 0 ..< ts_node_child_count(node):
         let child = ts_node_child(node, i)
         parse(child, nodes)
 
-proc parse*(tree: pointer): seq[tuple[kind: string, location: RangeTuple]] =
+proc parse*(tree: pointer): Table[int, seq[Node]] =
   if tree != nil:
     let node = ts_tree_root_node(tree)
     parse(node, result)

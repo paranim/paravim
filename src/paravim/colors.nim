@@ -1,5 +1,6 @@
 import nimgl/opengl
 from glm import nil
+import tables
 
 const
   bgColor* = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
@@ -10,3 +11,6 @@ const
   completionColor* = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.65))
   selectColor* = glm.vec4(GLfloat(148/255), GLfloat(69/255), GLfloat(5/255), GLfloat(0.8))
   searchColor* = glm.vec4(Glfloat(127/255), GLfloat(52/255), GLfloat(83/255), GLfloat(0.8))
+  yellowColor = glm.vec4(Glfloat(255/255), GLfloat(193/255), GLfloat(94/255), GLfloat(1.0))
+  syntaxColors* = {"string": yellowColor,
+                   "template_string": yellowColor}.toTable

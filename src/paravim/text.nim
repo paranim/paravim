@@ -2,6 +2,8 @@ import nimgl/opengl, glm
 import paranim/gl, paranim/gl/uniforms, paranim/gl/attributes
 from paranim/gl/entities import crop, color
 import paratext, paratext/gl/text
+from tree_sitter import Node
+from colors import nil
 
 const
   monoFontRaw = staticRead("assets/ttf/FiraCode-Regular.ttf")
@@ -131,25 +133,31 @@ proc crop*(instancedEntity: var ParavimTextEntity, i: int, j: int) =
   cropInstanceAttr(instancedEntity.attributes.a_texture_matrix, i, j)
   cropInstanceAttr(instancedEntity.attributes.a_color, i, j)
 
-proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, startPos: float): float =
+proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node], startPos: float): float =
   let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
   result = startPos
-  for ch in text:
+  for i in 0 ..< text.len:
     let
+      ch = text[i]
       charIndex = int(ch) - font.firstChar
       bakedChar =
         if charIndex >= 0 and charIndex < font.chars.len:
           font.chars[charIndex]
         else: # if char isn't found, use the space char
           font.chars[0]
+    var color = fontColor
+    for (kind, startCol, endCol) in parsedNodes:
+      if i >= startCol and (i <= endCol or endCol == -1):
+        color = colors.syntaxColors[kind]
+        break
     var e = entity
     e.crop(bakedChar, result, font.baseline)
-    e.color(fontColor)
+    e.color(color)
     instancedEntity.add(e)
     instancedEntity.uniforms.u_char_counts.data[lineNum] += 1
     result += bakedChar.xadvance
 
-proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string): float =
+proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node]): float =
   instancedEntity.uniforms.u_char_counts.data.add(0)
   instancedEntity.uniforms.u_char_counts.disable = false
-  add(instancedEntity, entity, font, fontColor, text, 0f)
+  add(instancedEntity, entity, font, fontColor, text, parsedNodes, 0f)

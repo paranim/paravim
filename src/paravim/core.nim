@@ -15,6 +15,7 @@ from libvim import nil
 import tables
 from strutils import nil
 from times import nil
+from tree_sitter import nil
 
 const
   fontSizeStep = 1/16
@@ -231,12 +232,13 @@ let rules* =
           session.insert(id, ScrollY, cursorBottom - textViewHeight)
     rule updateFullText(Fact):
       what:
-        (id, Path, path)
         (id, Tree, tree)
         (id, Lines, lines)
       then:
+        let parsed = tree_sitter.parse(tree)
         var e = deepCopy(monoEntity)
-        buffers.setText(e, baseMonoEntity, lines, tree)
+        for i in 0 ..< lines.len:
+          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
         session.insert(id, FullText, e)
     rule updateCroppedText(Fact):
       what:
@@ -355,7 +357,7 @@ proc tick*(game: RootGame, clear: bool) =
     e.uniforms.u_start_line.data = 0
     e.uniforms.u_start_line.disable = false
     for line in asciiArt[ascii]:
-      discard text.addLine(e, baseMonoEntity, text.monoFont, asciiColor, line)
+      discard text.addLine(e, baseMonoEntity, text.monoFont, asciiColor, line, [])
     e.project(float(windowWidth), float(windowHeight))
     e.scale(fontSize, fontSize)
     render(game, e)
@@ -431,13 +433,13 @@ proc tick*(game: RootGame, clear: bool) =
       var e = deepCopy(monoEntity)
       e.uniforms.u_start_line.data = 0
       e.uniforms.u_start_line.disable = false
-      let endPos = text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText)
+      let endPos = text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText, [])
       if vim.commandCompletion != "":
         let
           compLen = vim.commandCompletion.len
           commLen = vim.commandText.len
         if compLen > commLen:
-          discard text.add(e, baseMonoEntity, text.monoFont, completionColor, vim.commandCompletion[commLen ..< compLen], endPos)
+          discard text.add(e, baseMonoEntity, text.monoFont, completionColor, vim.commandCompletion[commLen ..< compLen], [], endPos)
       e.project(float(windowWidth), float(windowHeight))
       e.translate(0f, float(windowHeight) - textHeight)
       e.scale(fontSize, fontSize)
