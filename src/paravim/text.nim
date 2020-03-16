@@ -81,6 +81,14 @@ proc getInstanceAttr[T](attr: Attribute[T], i: int, uni: var Uniform[Vec4[T]]) =
     uni.data[x] = attr.data[x+i*4]
   uni.disable = false
 
+proc cropInstanceAttr[T](attr: var Attribute[T], i: int, j: int) =
+  let
+    size = attr.size * attr.iter
+    data = attr.data
+  new(attr.data)
+  attr.data[] = data[][i*size ..< j*size]
+  attr.disable = false
+
 proc add*(instancedEntity: var UncompiledParavimTextEntity, entity: UncompiledTextEntity) =
   addInstanceAttr(instancedEntity.attributes.a_translate_matrix, entity.uniforms.u_translate_matrix)
   addInstanceAttr(instancedEntity.attributes.a_scale_matrix, entity.uniforms.u_scale_matrix)
@@ -116,6 +124,12 @@ proc `[]=`*(instancedEntity: var UncompiledParavimTextEntity, i: int, entity: Un
   setInstanceAttr(instancedEntity.attributes.a_scale_matrix, i, entity.uniforms.u_scale_matrix)
   setInstanceAttr(instancedEntity.attributes.a_texture_matrix, i, entity.uniforms.u_texture_matrix)
   setInstanceAttr(instancedEntity.attributes.a_color, i, entity.uniforms.u_color)
+
+proc crop*(instancedEntity: var ParavimTextEntity, i: int, j: int) =
+  cropInstanceAttr(instancedEntity.attributes.a_translate_matrix, i, j)
+  cropInstanceAttr(instancedEntity.attributes.a_scale_matrix, i, j)
+  cropInstanceAttr(instancedEntity.attributes.a_texture_matrix, i, j)
+  cropInstanceAttr(instancedEntity.attributes.a_color, i, j)
 
 proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, startPos: float): float =
   let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1

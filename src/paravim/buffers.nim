@@ -1,5 +1,9 @@
+import nimgl/opengl
 from tree_sitter import nil
 from text import nil
+from paratext/gl/text as ptext import nil
+import colors
+from math import nil
 
 type
   BufferUpdateTuple* = tuple[bufferId: int, lines: seq[string], firstLine: int, lineCountChange: int]
@@ -54,5 +58,14 @@ proc rangeToRects*(rangeData: RangeTuple, lines: seq[string]): seq[RectTuple] =
       height: 1.float
     ))
 
-proc setText*(entity: text.ParavimTextEntity, lines: seq[string], tree: pointer) =
-  echo tree_sitter.parse(tree)
+proc getVisibleChars*(entity: text.ParavimTextEntity, linesToSkip: int, linesToCrop: int): tuple[charsToSkip: GLint, charsToCrop: GLint, charCounts: seq[GLint]] =
+  var charCounts = entity.uniforms.u_char_counts.data
+  let charsToSkip = math.sum(charCounts[0 ..< linesToSkip])
+  charCounts = charCounts[linesToSkip ..< linesToCrop]
+  let charsToCrop = charsToSkip + math.sum(charCounts)
+  (charsToSkip, charsToCrop, charCounts)
+
+proc setText*(entity: var text.ParavimTextEntity, baseEntity: ptext.UncompiledTextEntity, lines: seq[string], tree: pointer) =
+  for line in lines:
+    discard text.addLine(entity, baseEntity, text.monoFont, textColor, line)
+  #echo tree_sitter.parse(tree)

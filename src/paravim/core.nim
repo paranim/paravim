@@ -7,6 +7,7 @@ import pararules
 from text import ParavimTextEntity
 from paratext/gl/text as ptext import nil
 from buffers import BufferUpdateTuple, RangeTuple
+import colors
 import sets
 from math import `mod`
 from glm import nil
@@ -16,14 +17,6 @@ from strutils import nil
 from times import nil
 
 const
-  bgColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.95))
-  textColor = glm.vec4(1f, 1f, 1f, 1f)
-  asciiColor = glm.vec4(1f, 1f, 1f, 0.5f)
-  cursorColor = glm.vec4(GLfloat(112/255), GLfloat(128/255), GLfloat(144/255), GLfloat(0.9))
-  tanColor = glm.vec4(GLfloat(209/255), GLfloat(153/255), GLfloat(101/255), GLfloat(1))
-  completionColor = glm.vec4(GLfloat(52/255), GLfloat(40/255), GLfloat(42/255), GLfloat(0.65))
-  selectColor = glm.vec4(GLfloat(148/255), GLfloat(69/255), GLfloat(5/255), GLfloat(0.8))
-  searchColor = glm.vec4(Glfloat(127/255), GLfloat(52/255), GLfloat(83/255), GLfloat(0.8))
   fontSizeStep = 1/16
   minFontSize = 1/8
   maxFontSize = 1
@@ -83,6 +76,15 @@ schema Fact(Id, Attr):
   LineCount: int
   Tree: pointer
   Text: ParavimTextEntity
+
+var
+  session* = initSession(Fact)
+  nextId* = Id.high.ord + 1
+  baseMonoEntity: ptext.UncompiledTextEntity
+  monoEntity*: ParavimTextEntity
+  uncompiledRectEntity: UncompiledTwoDEntity
+  rectEntity: TwoDEntity
+  rectsEntity: InstancedTwoDEntity
 
 let rules* =
   ruleset:
@@ -224,16 +226,9 @@ let rules* =
         (id, Lines, lines, then = false)
         (id, Text, text, then = false)
       then:
-        buffers.setText(text, lines, tree)
-
-var
-  session* = initSession(Fact)
-  nextId* = Id.high.ord + 1
-  baseMonoEntity: ptext.UncompiledTextEntity
-  monoEntity*: ParavimTextEntity
-  uncompiledRectEntity: UncompiledTwoDEntity
-  rectEntity: TwoDEntity
-  rectsEntity: InstancedTwoDEntity
+        var t = text
+        buffers.setText(t, baseMonoEntity, lines, tree)
+        session.insert(id, Text, t)
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
@@ -378,16 +373,17 @@ proc tick*(game: RootGame, clear: bool) =
         render(game, e)
     # text
     block:
+      var e = currentBuffer.text
       let
-        linesToSkip = int(currentBuffer.scrollY / textHeight)
-        visibleLines = int(windowHeight.float / textHeight) + 1
-      var e = deepCopy(currentBuffer.text)
+        lineCount = currentBuffer.lines.len
+        linesToSkip = min(int(currentBuffer.scrollY / textHeight), lineCount)
+        linesToCrop = min(linesToSkip + int(windowHeight.float / textHeight) + 1, lineCount)
+        (charsToSkip, charsToCrop, charCounts) = buffers.getVisibleChars(e, linesToSkip, linesToCrop)
+      e.uniforms.u_char_counts.data = charCounts
+      e.uniforms.u_char_counts.disable = false
       e.uniforms.u_start_line.data = linesToSkip.int32
       e.uniforms.u_start_line.disable = false
-      for i in linesToSkip ..< linesToSkip + visibleLines:
-        if i >= currentBuffer.lines.len:
-          break
-        discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, currentBuffer.lines[i])
+      text.crop(e, charsToSkip, charsToCrop)
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
       e.scale(fontSize, fontSize)
