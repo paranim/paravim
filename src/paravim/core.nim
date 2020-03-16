@@ -417,10 +417,11 @@ proc tick*(game: RootGame, clear: bool) =
     # text
     block:
       var e = currentBuffer.croppedText
-      e.project(float(windowWidth), float(windowHeight))
-      e.invert(camera)
-      e.scale(fontSize, fontSize)
-      render(game, e)
+      if e.instanceCount > 0:
+        e.project(float(windowWidth), float(windowHeight))
+        e.invert(camera)
+        e.scale(fontSize, fontSize)
+        render(game, e)
 
   # command line background
   block:
