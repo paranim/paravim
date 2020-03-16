@@ -330,6 +330,7 @@ proc ts_tree_root_node*(self: pointer): TSNode {.cdecl, importc: "ts_tree_root_n
 ##
 
 #proc ts_tree_edit*(self: ptr TSTree; edit: ptr TSInputEdit)
+proc ts_tree_edit*(self: pointer; edit: ptr TSInputEdit) {.cdecl, importc: "ts_tree_edit".}
 ## *
 ##  Compare an old edited syntax tree to a new syntax tree representing the same
 ##  document, returning an array of ranges whose syntactic structure has changed.

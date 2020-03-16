@@ -10,7 +10,7 @@ import tables
 proc free(p: pointer) {.cdecl, importc: "free".}
 proc tree_sitter_javascript(): pointer {.cdecl, importc: "tree_sitter_javascript".}
 
-proc createTree*(path: string, lines: seq[string]): pointer =
+proc init*(path: string, lines: seq[string]): tuple[tree: pointer, parser: pointer] =
   let parser = ts_parser_new()
   let (_, _, ext) = os.splitFile(path)
   case ext:
@@ -18,9 +18,9 @@ proc createTree*(path: string, lines: seq[string]): pointer =
       doAssert ts_parser_set_language(parser, tree_sitter_javascript())
     else:
       ts_parser_delete(parser)
-      return nil
+      return (nil, nil)
   let content = strutils.join(lines, "\n")
-  ts_parser_parse_string(parser, nil, content, content.len.uint32)
+  (ts_parser_parse_string(parser, nil, content, content.len.uint32), parser)
 
 proc deleteTree*(tree: pointer) =
   if tree != nil:
@@ -69,3 +69,53 @@ proc parse*(tree: pointer): Table[int, seq[Node]] =
   if tree != nil:
     let node = ts_tree_root_node(tree)
     parse(node, result)
+
+proc getLen(arr: openArray[string], i: int, default: int): int =
+  if i >= arr.len:
+    default
+  else:
+    arr[i].len
+
+proc initInputEdit(firstLine: int, lineCountChange: int, lines: seq[string], newLines: seq[string]): TSInputEdit =
+  var edit: TSInputEdit
+  for i in 0 ..< firstLine:
+    edit.start_byte += lines[i].len.uint32
+  edit.start_byte += firstLine.uint32 # newlines
+  edit.old_end_byte = edit.start_byte
+  edit.new_end_byte = edit.start_byte
+  edit.start_point.row = firstLine.uint32
+  edit.start_point.column = 0.uint32
+  if lineCountChange < 0:
+    for i in firstLine .. firstLine + (-1 * lineCountChange):
+      edit.old_end_byte += getLen(lines, i, 0).uint32
+    edit.old_end_byte += uint32(-1 * lineCountChange) # newlines
+    edit.new_end_byte += getLen(newLines, firstLine, 0).uint32
+    edit.old_end_point.row = uint32(firstLine + (-1 * lineCountChange))
+    edit.old_end_point.column = getLen(lines, firstLine + (-1 * lineCountChange), 0).uint32
+    edit.new_end_point.row = firstLine.uint32
+    edit.new_end_point.column = getLen(newLines, firstLine, 0).uint32
+  elif lineCountChange == 0:
+    edit.old_end_byte += getLen(lines, firstLine, 0).uint32
+    edit.new_end_byte += getLen(newLines, firstLine, 0).uint32
+    edit.old_end_point.row = firstLine.uint32
+    edit.old_end_point.column = getLen(lines, firstLine, 0).uint32
+    edit.new_end_point.row = firstLine.uint32
+    edit.new_end_point.column = getLen(newLines, firstLine, 0).uint32
+  elif lineCountChange > 0:
+    edit.old_end_byte += getLen(lines, firstLine, 0).uint32
+    for i in firstLine .. firstLine + lineCountChange:
+      edit.new_end_byte += getLen(newLines, i, 0).uint32
+    edit.new_end_byte += lineCountChange.uint32 # newlines
+    edit.old_end_point.row = firstLine.uint32
+    edit.old_end_point.column = getLen(lines, firstLine, 0).uint32
+    edit.new_end_point.row = uint32(firstLine + lineCountChange)
+    edit.new_end_point.column = getLen(newLines, firstLine + lineCountChange, 0).uint32
+  edit
+
+proc editTree*(tree: pointer, parser: pointer, firstLine: int, lineCountChange: int, lines: seq[string], newLines: seq[string]): pointer =
+  if tree != nil:
+    var edit = initInputEdit(firstLine, lineCountChange, lines, newLines)
+    ts_tree_edit(tree, edit.addr)
+    let content = strutils.join(newLines, "\n")
+    result = ts_parser_parse_string(parser, tree, content, content.len.uint32)
+    ts_tree_delete(tree)

@@ -41,7 +41,7 @@ type
     AsciiArt, DeleteBuffer,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
-    LineCount, Tree, FullText, CroppedText
+    LineCount, Tree, Parser, FullText, CroppedText
   Strings = seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
@@ -76,6 +76,7 @@ schema Fact(Id, Attr):
   ScrollY: float
   LineCount: int
   Tree: pointer
+  Parser: pointer
   FullText: ParavimTextEntity
   CroppedText: ParavimTextEntity
 
@@ -125,6 +126,7 @@ let rules* =
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
+        (id, Parser, parser)
         (id, FullText, fullText)
         (id, CroppedText, croppedText)
     rule getBuffer(Fact):
@@ -137,6 +139,7 @@ let rules* =
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
+        (id, Parser, parser)
         (id, FullText, fullText)
         (id, CroppedText, croppedText)
     rule deleteBuffer(Fact):
@@ -150,6 +153,7 @@ let rules* =
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
+        (id, Parser, parser)
         (id, FullText, fullText)
         (id, CroppedText, croppedText)
       then:
@@ -161,6 +165,7 @@ let rules* =
         session.retract(id, ScrollY, scrollY)
         session.retract(id, LineCount, lineCount)
         session.retract(id, Tree, tree)
+        session.retract(id, Parser, parser)
         session.retract(id, FullText, fullText)
         session.retract(id, CroppedText, croppedText)
     rule updateBuffer(Fact):
@@ -168,11 +173,16 @@ let rules* =
         (Global, BufferUpdate, bu)
         (id, Lines, lines)
         (id, BufferId, bufferId)
+        (id, Tree, tree)
+        (id, Parser, parser)
       cond:
         bufferId == bu.bufferId
       then:
         session.retract(Global, BufferUpdate, bu)
-        session.insert(id, Lines, buffers.updateLines(lines, bu))
+        let newLines = buffers.updateLines(lines, bu)
+        let newTree = tree_sitter.editTree(tree, parser, bu.firstLine, bu.lineCountChange, lines, newLines)
+        session.insert(id, Tree, newTree)
+        session.insert(id, Lines, newLines)
     rule resizeWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)
