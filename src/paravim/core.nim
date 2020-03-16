@@ -40,7 +40,7 @@ type
     AsciiArt, DeleteBuffer,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
-    LineCount, Tree, Text,
+    LineCount, Tree, FullText, CroppedText
   Strings = seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
@@ -75,13 +75,14 @@ schema Fact(Id, Attr):
   ScrollY: float
   LineCount: int
   Tree: pointer
-  Text: ParavimTextEntity
+  FullText: ParavimTextEntity
+  CroppedText: ParavimTextEntity
 
 var
   session* = initSession(Fact)
   nextId* = Id.high.ord + 1
   baseMonoEntity: ptext.UncompiledTextEntity
-  monoEntity*: ParavimTextEntity
+  monoEntity: ParavimTextEntity
   uncompiledRectEntity: UncompiledTwoDEntity
   rectEntity: TwoDEntity
   rectsEntity: InstancedTwoDEntity
@@ -123,7 +124,8 @@ let rules* =
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
-        (id, Text, text)
+        (id, FullText, fullText)
+        (id, CroppedText, croppedText)
     rule getBuffer(Fact):
       what:
         (id, BufferId, bufferId)
@@ -134,7 +136,8 @@ let rules* =
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
-        (id, Text, text)
+        (id, FullText, fullText)
+        (id, CroppedText, croppedText)
     rule deleteBuffer(Fact):
       what:
         (Global, DeleteBuffer, bufferId)
@@ -145,6 +148,9 @@ let rules* =
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
         (id, LineCount, lineCount)
+        (id, Tree, tree)
+        (id, FullText, fullText)
+        (id, CroppedText, croppedText)
       then:
         session.retract(id, BufferId, bufferId)
         session.retract(id, Lines, lines)
@@ -153,6 +159,9 @@ let rules* =
         session.retract(id, ScrollX, scrollX)
         session.retract(id, ScrollY, scrollY)
         session.retract(id, LineCount, lineCount)
+        session.retract(id, Tree, tree)
+        session.retract(id, FullText, fullText)
+        session.retract(id, CroppedText, croppedText)
     rule updateBuffer(Fact):
       what:
         (Global, BufferUpdate, bu)
@@ -220,15 +229,36 @@ let rules* =
           session.insert(id, ScrollY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
           session.insert(id, ScrollY, cursorBottom - textViewHeight)
-    rule updateTree(Fact):
+    rule updateFullText(Fact):
       what:
+        (id, Path, path)
         (id, Tree, tree)
-        (id, Lines, lines, then = false)
-        (id, Text, text, then = false)
+        (id, Lines, lines)
       then:
-        var t = text
-        buffers.setText(t, baseMonoEntity, lines, tree)
-        session.insert(id, Text, t)
+        var e = deepCopy(monoEntity)
+        buffers.setText(e, baseMonoEntity, lines, tree)
+        session.insert(id, FullText, e)
+    rule updateCroppedText(Fact):
+      what:
+        (Global, WindowHeight, windowHeight)
+        (Global, FontSize, fontSize)
+        (id, FullText, fullText)
+        (id, LineCount, lineCount)
+        (id, ScrollY, scrollY)
+      then:
+        var e = fullText
+        let
+          fontHeight = text.monoFont.height
+          textHeight = fontHeight * fontSize
+          linesToSkip = min(int(scrollY / textHeight), lineCount)
+          linesToCrop = min(linesToSkip + int(windowHeight.float / textHeight) + 1, lineCount)
+          (charsToSkip, charsToCrop, charCounts) = buffers.getVisibleChars(e, linesToSkip, linesToCrop)
+        e.uniforms.u_char_counts.data = charCounts
+        e.uniforms.u_char_counts.disable = false
+        e.uniforms.u_start_line.data = linesToSkip.int32
+        e.uniforms.u_start_line.disable = false
+        text.crop(e, charsToSkip, charsToCrop)
+        session.insert(id, CroppedText, e)
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
@@ -373,17 +403,7 @@ proc tick*(game: RootGame, clear: bool) =
         render(game, e)
     # text
     block:
-      var e = currentBuffer.text
-      let
-        lineCount = currentBuffer.lines.len
-        linesToSkip = min(int(currentBuffer.scrollY / textHeight), lineCount)
-        linesToCrop = min(linesToSkip + int(windowHeight.float / textHeight) + 1, lineCount)
-        (charsToSkip, charsToCrop, charCounts) = buffers.getVisibleChars(e, linesToSkip, linesToCrop)
-      e.uniforms.u_char_counts.data = charCounts
-      e.uniforms.u_char_counts.disable = false
-      e.uniforms.u_start_line.data = linesToSkip.int32
-      e.uniforms.u_start_line.disable = false
-      text.crop(e, charsToSkip, charsToCrop)
+      var e = currentBuffer.croppedText
       e.project(float(windowWidth), float(windowHeight))
       e.invert(camera)
       e.scale(fontSize, fontSize)
