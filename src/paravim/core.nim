@@ -41,7 +41,7 @@ type
     AsciiArt, DeleteBuffer,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
-    LineCount, Tree, Parser, FullText, CroppedText
+    LineCount, Tree, Parser, CroppedText
   Strings = seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
@@ -77,7 +77,6 @@ schema Fact(Id, Attr):
   LineCount: int
   Tree: pointer
   Parser: pointer
-  FullText: ParavimTextEntity
   CroppedText: ParavimTextEntity
 
 var
@@ -127,7 +126,6 @@ let rules* =
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
-        (id, FullText, fullText)
         (id, CroppedText, croppedText)
     rule getBuffer(Fact):
       what:
@@ -140,7 +138,6 @@ let rules* =
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
-        (id, FullText, fullText)
         (id, CroppedText, croppedText)
     rule deleteBuffer(Fact):
       what:
@@ -154,7 +151,6 @@ let rules* =
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
-        (id, FullText, fullText)
         (id, CroppedText, croppedText)
       then:
         session.retract(id, BufferId, bufferId)
@@ -166,7 +162,6 @@ let rules* =
         session.retract(id, LineCount, lineCount)
         session.retract(id, Tree, tree)
         session.retract(id, Parser, parser)
-        session.retract(id, FullText, fullText)
         session.retract(id, CroppedText, croppedText)
     rule updateBuffer(Fact):
       what:
@@ -240,37 +235,28 @@ let rules* =
           session.insert(id, ScrollY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
           session.insert(id, ScrollY, cursorBottom - textViewHeight)
-    rule updateFullText(Fact):
-      what:
-        (id, Tree, tree)
-        (id, Lines, lines)
-      then:
-        when not defined(paravimtest):
-          let parsed = tree_sitter.parse(tree)
-          var e = deepCopy(monoEntity)
-          for i in 0 ..< lines.len:
-            discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
-          session.insert(id, FullText, e)
     rule updateCroppedText(Fact):
       what:
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
-        (id, FullText, fullText)
         (id, LineCount, lineCount)
         (id, ScrollY, scrollY)
+        (id, Tree, tree)
+        (id, Lines, lines)
       then:
-        var e = fullText
+        var e = deepCopy(monoEntity)
         let
+          parsed = tree_sitter.parse(tree)
           fontHeight = text.monoFont.height
           textHeight = fontHeight * fontSize
           linesToSkip = min(int(scrollY / textHeight), lineCount)
           linesToCrop = min(linesToSkip + int(windowHeight.float / textHeight) + 1, lineCount)
-          (charsToSkip, charsToCrop, charCounts) = buffers.getVisibleChars(e, linesToSkip, linesToCrop)
-        e.uniforms.u_char_counts.data = charCounts
-        e.uniforms.u_char_counts.disable = false
+        for i in linesToSkip ..< linesToSkip + linesToCrop:
+          if i >= lines.len:
+            break
+          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
-        text.crop(e, charsToSkip, charsToCrop)
         session.insert(id, CroppedText, e)
 
 proc getCurrentSessionId*(): int =
