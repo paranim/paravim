@@ -2,6 +2,7 @@
 {.compile: "tree_sitter/parser_javascript.c".}
 {.compile: "tree_sitter/parser_javascript_scanner.c".}
 {.compile: "tree_sitter/parser_c.c".}
+{.compile: "tree_sitter/parser_json.c".}
 
 import tree_sitter/tree_sitter/api
 from os import nil
@@ -12,6 +13,7 @@ import tables
 
 proc free(p: pointer) {.cdecl, importc: "free".}
 proc tree_sitter_javascript(): pointer {.cdecl, importc: "tree_sitter_javascript".}
+proc tree_sitter_json(): pointer {.cdecl, importc: "tree_sitter_json".}
 proc tree_sitter_c(): pointer {.cdecl, importc: "tree_sitter_c".}
 
 proc init*(path: string, lines: seq[string]): tuple[tree: pointer, parser: pointer] =
@@ -20,7 +22,9 @@ proc init*(path: string, lines: seq[string]): tuple[tree: pointer, parser: point
   case ext:
     of ".js":
       doAssert ts_parser_set_language(parser, tree_sitter_javascript())
-    of ".c", ".h":
+    of ".json":
+      doAssert ts_parser_set_language(parser, tree_sitter_json())
+    of ".c", ".h", ".cc", ".cpp", ".hpp":
       doAssert ts_parser_set_language(parser, tree_sitter_c())
     else:
       ts_parser_delete(parser)
