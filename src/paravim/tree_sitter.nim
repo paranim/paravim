@@ -7,6 +7,8 @@ import tree_sitter/tree_sitter/api
 from os import nil
 from strutils import nil
 from algorithm import nil
+from colors import nil
+import tables
 
 proc free(p: pointer) {.cdecl, importc: "free".}
 proc tree_sitter_javascript(): pointer {.cdecl, importc: "tree_sitter_javascript".}
@@ -45,15 +47,12 @@ type
 
 proc parse*(node: TSNode, nodes: var seq[Node]) =
   let kind = $ ts_node_type(node)
-  case kind:
-    of "string", "string_literal", "template_string",
-       "number", "number_literal",
-       "comment":
-      nodes.add((kind, ts_node_start_byte(node).int, ts_node_end_byte(node).int))
-    else:
-      for i in 0 ..< ts_node_child_count(node):
-        let child = ts_node_child(node, i)
-        parse(child, nodes)
+  if colors.syntaxColors.hasKey(kind):
+    nodes.add((kind, ts_node_start_byte(node).int, ts_node_end_byte(node).int))
+  else:
+    for i in 0 ..< ts_node_child_count(node):
+      let child = ts_node_child(node, i)
+      parse(child, nodes)
 
 proc parse*(tree: pointer): seq[Node] =
   if tree != nil:
