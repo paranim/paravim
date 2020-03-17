@@ -243,7 +243,7 @@ let rules* =
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
         (id, ScrollY, scrollY)
-        (id, Tree, tree, then = false)
+        (id, Tree, tree)
         (id, Parser, parser)
         (id, Lines, lines)
       then:
@@ -254,14 +254,12 @@ let rules* =
           lineCount = lines.len
           linesToSkip = min(int(scrollY / textHeight), lineCount)
           linesToCrop = min(linesToSkip + int(windowHeight.float / textHeight) + 1, lineCount)
-          newTree = tree_sitter.editTreePartial(tree, parser, lines, linesToSkip, linesToCrop)
-          parsed = tree_sitter.parse(newTree)
+          parsed = tree_sitter.parse(tree)
         for i in linesToSkip ..< linesToCrop:
           discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
         session.insert(id, CroppedText, e)
-        session.insert(id, Tree, newTree)
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
