@@ -32,6 +32,7 @@ type
     Global
   Attr* = enum
     WindowTitle, WindowTitleCallback,
+    InitComplete,
     WindowWidth, WindowHeight,
     MouseClick, MouseX, MouseY,
     FontSize, CurrentBufferId, BufferUpdate,
@@ -49,6 +50,7 @@ type
 schema Fact(Id, Attr):
   WindowTitle: string
   WindowTitleCallback: WindowTitleCallbackType
+  InitComplete: bool
   WindowWidth: int
   WindowHeight: int
   MouseClick: int
@@ -237,6 +239,7 @@ let rules* =
           session.insert(id, ScrollY, cursorBottom - textViewHeight)
     rule updateCroppedText(Fact):
       what:
+        (Global, InitComplete, true)
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
         (id, ScrollY, scrollY)
@@ -312,6 +315,7 @@ proc init*(game: var RootGame, showAscii: bool, density: float) =
   rectsEntity = compile(game, initInstancedEntity(uncompiledRectEntity))
 
   # set initial values
+  session.insert(Global, InitComplete, true)
   session.insert(Global, FontSize, 1/4 * density)
   let ascii =
     if showAscii:
