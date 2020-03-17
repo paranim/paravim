@@ -249,7 +249,7 @@ let rules* =
           let parsed = tree_sitter.parse(tree)
           var e = deepCopy(monoEntity)
           for i in 0 ..< lines.len:
-            discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
+            discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], parsed)
           session.insert(id, FullText, e)
     rule updateCroppedText(Fact):
       what:

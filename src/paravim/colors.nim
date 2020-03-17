@@ -13,6 +13,11 @@ const
 
   yellowColor* = glm.vec4(Glfloat(255/255), GLfloat(193/255), GLfloat(94/255), GLfloat(1.0))
   tanColor* = glm.vec4(Glfloat(209/255), GLfloat(153/255), GLfloat(101/255), GLfloat(1.0))
+  grayColor* = glm.vec4(Glfloat(150/255), GLfloat(129/255), GLfloat(133/255), GLfloat(1.0))
   syntaxColors* = {"string": tanColor,
+                   "string_literal": tanColor,
                    "template_string": tanColor,
-                   "number": yellowColor}.toTable
+                   "number": yellowColor,
+                   "number_literal": yellowColor,
+                   "comment": grayColor,
+                   }.toTable

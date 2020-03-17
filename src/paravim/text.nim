@@ -4,6 +4,7 @@ from paranim/gl/entities import crop, color
 import paratext, paratext/gl/text
 from tree_sitter import Node
 from colors import nil
+from math import nil
 
 const
   monoFontRaw = staticRead("assets/ttf/FiraCode-Regular.ttf")
@@ -134,7 +135,9 @@ proc crop*(instancedEntity: var ParavimTextEntity, i: int, j: int) =
   cropInstanceAttr(instancedEntity.attributes.a_color, i, j)
 
 proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node], startPos: float): float =
-  let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
+  let
+    lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
+    prevBytes = math.sum(instancedEntity.uniforms.u_char_counts.data) + lineNum # lineNum == number of newlines
   result = startPos
   for i in 0 ..< text.len:
     let
@@ -147,7 +150,7 @@ proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, 
           font.chars[0]
     var color = fontColor
     for (kind, startCol, endCol) in parsedNodes:
-      if i >= startCol and (i <= endCol or endCol == -1):
+      if i >= startCol - prevBytes and i < endCol - prevBytes:
         color = colors.syntaxColors[kind]
         break
     var e = entity
