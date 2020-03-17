@@ -385,7 +385,7 @@ proc ts_node_end_byte*(a1: TSNode): uint32_t {.cdecl, importc: "ts_node_end_byte
 ##  Get the node's end position in terms of rows and columns.
 ##
 
-proc ts_node_end_point*(a1: TSNode): TSPoint {.cdecl, importc: "ts_node_start_point".}
+proc ts_node_end_point*(a1: TSNode): TSPoint {.cdecl, importc: "ts_node_end_point".}
 ## *
 ##  Get an S-expression representing the node as a string.
 ##
