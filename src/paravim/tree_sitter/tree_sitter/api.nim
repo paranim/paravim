@@ -162,6 +162,8 @@ proc ts_parser_set_language*(self: pointer; language: pointer): bool {.cdecl, im
 
 #proc ts_parser_set_included_ranges*(self: ptr TSParser; ranges: ptr TSRange;
 #                                   length: uint32_t): bool
+proc ts_parser_set_included_ranges*(self: pointer; ranges: ptr TSRange;
+                                   length: uint32_t): bool {.cdecl, importc: "ts_parser_set_included_ranges".}
 ## *
 ##  Get the ranges of text that the parser will include when parsing.
 ##

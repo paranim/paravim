@@ -168,15 +168,15 @@ let rules* =
         (Global, BufferUpdate, bu)
         (id, Lines, lines)
         (id, BufferId, bufferId)
-        (id, Tree, tree)
-        (id, Parser, parser)
+        #(id, Tree, tree)
+        #(id, Parser, parser)
       cond:
         bufferId == bu.bufferId
       then:
         session.retract(Global, BufferUpdate, bu)
         let newLines = buffers.updateLines(lines, bu)
-        let newTree = tree_sitter.editTree(tree, parser, bu.firstLine, bu.lineCountChange, lines, newLines)
-        session.insert(id, Tree, newTree)
+        #let newTree = tree_sitter.editTree(tree, parser, bu.firstLine, bu.lineCountChange, lines, newLines)
+        #session.insert(id, Tree, newTree)
         session.insert(id, Lines, newLines)
     rule resizeWindow(Fact):
       what:
@@ -239,25 +239,26 @@ let rules* =
       what:
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
-        (id, LineCount, lineCount)
         (id, ScrollY, scrollY)
-        (id, Tree, tree)
+        (id, Tree, tree, then = false)
+        (id, Parser, parser)
         (id, Lines, lines)
       then:
         var e = deepCopy(monoEntity)
         let
-          parsed = tree_sitter.parse(tree)
           fontHeight = text.monoFont.height
           textHeight = fontHeight * fontSize
+          lineCount = lines.len
           linesToSkip = min(int(scrollY / textHeight), lineCount)
           linesToCrop = min(linesToSkip + int(windowHeight.float / textHeight) + 1, lineCount)
-        for i in linesToSkip ..< linesToSkip + linesToCrop:
-          if i >= lines.len:
-            break
+          newTree = tree_sitter.editTreePartial(tree, parser, lines, linesToSkip, linesToCrop)
+          parsed = tree_sitter.parse(newTree)
+        for i in linesToSkip ..< linesToCrop:
           discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
         session.insert(id, CroppedText, e)
+        session.insert(id, Tree, newTree)
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
