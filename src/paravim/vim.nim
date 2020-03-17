@@ -2,6 +2,7 @@ import libvim, structs, core
 from buffers import nil
 from pararules import nil
 from strutils import nil
+from os import nil
 import tables
 
 proc cropCommandText(commandText: string): string =
@@ -112,6 +113,7 @@ proc onBufEnter(buf: buf_T) =
     path = vimBufferGetFilename(buf)
     count = vimBufferGetLineCount(buf)
   session.insert(Global, CurrentBufferId, bufferId)
+  session.insert(Global, WindowTitle, if path == nil: "Paravim" else: os.extractFilename($ path) & " - Paravim")
   let index = pararules.find(session, rules.getBuffer, bufferId = bufferId)
   if path != nil:
     # get lines

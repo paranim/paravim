@@ -37,6 +37,7 @@ type
   Id* = enum
     Global
   Attr* = enum
+    WindowTitle, WindowTitleCallback,
     WindowWidth, WindowHeight,
     MouseClick, MouseX, MouseY,
     FontSize, CurrentBufferId, BufferUpdate,
@@ -49,8 +50,11 @@ type
     LineCount,
   Strings = seq[string]
   RangeTuples = seq[RangeTuple]
+  WindowTitleCallbackType = proc (title: string)
 
 schema Fact(Id, Attr):
+  WindowTitle: string
+  WindowTitleCallback: WindowTitleCallbackType
   WindowWidth: int
   WindowHeight: int
   MouseClick: int
@@ -80,6 +84,12 @@ schema Fact(Id, Attr):
 
 let rules* =
   ruleset:
+    rule windowTitleCallback(Fact):
+      what:
+        (Global, WindowTitle, title)
+        (Global, WindowTitleCallback, callback)
+      then:
+        callback(title)
     rule getWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)

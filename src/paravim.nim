@@ -73,6 +73,8 @@ proc init*(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
 
   core.init(game, params.len == 0, float(density))
 
+  core.insert(core.session, core.Global, core.WindowTitleCallback, proc (title: string) = w.setWindowTitle(title))
+
 proc init*(game: var gl.RootGame, w: GLFWWindow) =
   init(game, w, @[])
 
