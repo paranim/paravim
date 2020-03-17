@@ -42,7 +42,7 @@ type
 proc parse*(node: TSNode, nodes: var Table[int, seq[Node]]) =
   let kind = $ ts_node_type(node)
   case kind:
-    of "string", "template_string":
+    of "string", "template_string", "number":
       let
         startPoint = ts_node_start_point(node)
         childCount = ts_node_child_count(node)
@@ -50,16 +50,26 @@ proc parse*(node: TSNode, nodes: var Table[int, seq[Node]]) =
       if childCount > 0.uint32:
         let child = ts_node_child(node, childCount - 1)
         endPoint = ts_node_end_point(child)
-      for line in startPoint.row .. endPoint.row:
+      if startPoint.row == endPoint.row:
         let
-          lineNum = line.int
-          startLine = startPoint.row.int
-          endLine = endPoint.row.int
-          startCol = if lineNum == startLine: startPoint.column.int else: 0
-          endCol = if lineNum == endLine: endPoint.column.int else: -1
+          lineNum = startPoint.row.int
+          startCol = startPoint.column.int
+          length = int(ts_node_end_byte(node) - ts_node_start_byte(node))
+          endCol = int(startCol + length - 1)
         if not nodes.hasKey(lineNum):
           nodes[lineNum] = @[]
         nodes[lineNum].add((kind, startCol, endCol))
+      else:
+        for line in startPoint.row .. endPoint.row:
+          let
+            lineNum = line.int
+            startLine = startPoint.row.int
+            endLine = endPoint.row.int
+            startCol = if lineNum == startLine: startPoint.column.int else: 0
+            endCol = if lineNum == endLine: endPoint.column.int else: -1
+          if not nodes.hasKey(lineNum):
+            nodes[lineNum] = @[]
+          nodes[lineNum].add((kind, startCol, endCol))
     else:
       for i in 0 ..< ts_node_child_count(node):
         let child = ts_node_child(node, i)

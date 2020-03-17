@@ -370,7 +370,7 @@ proc ts_node_type*(a1: TSNode): cstring {.cdecl, importc: "ts_node_type".}
 ##  Get the node's start byte.
 ##
 
-#proc ts_node_start_byte*(a1: TSNode): uint32_t
+proc ts_node_start_byte*(a1: TSNode): uint32_t {.cdecl, importc: "ts_node_start_byte".}
 ## *
 ##  Get the node's start position in terms of rows and columns.
 ##
@@ -380,7 +380,7 @@ proc ts_node_start_point*(a1: TSNode): TSPoint {.cdecl, importc: "ts_node_start_
 ##  Get the node's end byte.
 ##
 
-#proc ts_node_end_byte*(a1: TSNode): uint32_t
+proc ts_node_end_byte*(a1: TSNode): uint32_t {.cdecl, importc: "ts_node_end_byte".}
 ## *
 ##  Get the node's end position in terms of rows and columns.
 ##
