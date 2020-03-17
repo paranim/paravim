@@ -168,15 +168,15 @@ let rules* =
         (Global, BufferUpdate, bu)
         (id, Lines, lines)
         (id, BufferId, bufferId)
-        #(id, Tree, tree)
-        #(id, Parser, parser)
+        (id, Tree, tree)
+        (id, Parser, parser)
       cond:
         bufferId == bu.bufferId
       then:
         session.retract(Global, BufferUpdate, bu)
         let newLines = buffers.updateLines(lines, bu)
-        #let newTree = tree_sitter.editTree(tree, parser, bu.firstLine, bu.lineCountChange, lines, newLines)
-        #session.insert(id, Tree, newTree)
+        let newTree = tree_sitter.editTree(tree, parser, bu.firstLine, bu.lineCountChange, lines, newLines)
+        session.insert(id, Tree, newTree)
         session.insert(id, Lines, newLines)
     rule resizeWindow(Fact):
       what:
