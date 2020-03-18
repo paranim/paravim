@@ -123,22 +123,3 @@ proc editTree*(tree: pointer, parser: pointer, firstLine: int, lineCountChange: 
     let content = strutils.join(newLines, "\n")
     result = ts_parser_parse_string(parser, tree, content, content.len.uint32)
     ts_tree_delete(tree)
-
-proc editTreePartial*(tree: pointer, parser: pointer, lines: seq[string], linesToSkip: int, linesToCrop: int): pointer =
-  if tree != nil:
-    var r: TSRange
-    r.start_point.row = linesToSkip.uint32
-    r.start_point.column = 0
-    r.end_point.row = uint32(linesToCrop - 1)
-    r.end_point.column = lines[linesToCrop - 1].len.uint32
-    for i in 0 ..< linesToSkip:
-      r.start_byte += lines[i].len.uint32
-    r.start_byte += linesToSkip.uint32 # newlines
-    r.end_byte = r.start_byte
-    for i in linesToSkip ..< linesToCrop:
-      r.end_byte += lines[i].len.uint32
-    r.end_byte += linesToCrop.uint32 # newlines
-    doAssert ts_parser_set_included_ranges(parser, r.addr, 1)
-    let content = strutils.join(lines, "\n")
-    result = ts_parser_parse_string(parser, tree, content, content.len.uint32)
-    ts_tree_delete(tree)
