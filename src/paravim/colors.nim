@@ -20,5 +20,7 @@ const
                    "template_string": tanColor,
                    "number": yellowColor,
                    "number_literal": yellowColor,
+                   "integer": yellowColor,
+                   "float": yellowColor,
                    "comment": grayColor,
                    }.toTable
