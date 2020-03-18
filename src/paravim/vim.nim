@@ -194,6 +194,7 @@ proc init*(filesToOpen: seq[string], onQuit: QuitCallback) =
   vimExecute("set shiftwidth=2")
   vimExecute("set expandtab")
   vimExecute("set hlsearch")
+  vimExecute("set fileformats=unix,dos")
   vimExecute("filetype plugin index on")
 
   session.insert(Global, VimMode, vimGetMode())
