@@ -3,6 +3,8 @@
 {.compile: "tree_sitter/parser_javascript_scanner.c".}
 {.compile: "tree_sitter/parser_c.c".}
 {.compile: "tree_sitter/parser_json.c".}
+{.compile: "tree_sitter/parser_python.c".}
+{.compile: "tree_sitter/scanner_python.cc".}
 
 import tree_sitter/tree_sitter/api
 from os import nil
@@ -14,6 +16,7 @@ proc free(p: pointer) {.cdecl, importc: "free".}
 proc tree_sitter_javascript(): pointer {.cdecl, importc: "tree_sitter_javascript".}
 proc tree_sitter_json(): pointer {.cdecl, importc: "tree_sitter_json".}
 proc tree_sitter_c(): pointer {.cdecl, importc: "tree_sitter_c".}
+proc tree_sitter_python(): pointer {.cdecl, importc: "tree_sitter_python".}
 
 proc init*(path: string, lines: seq[string]): tuple[tree: pointer, parser: pointer] =
   let parser = ts_parser_new()
@@ -25,6 +28,8 @@ proc init*(path: string, lines: seq[string]): tuple[tree: pointer, parser: point
       doAssert ts_parser_set_language(parser, tree_sitter_json())
     of ".c", ".h", ".cc", ".cpp", ".hpp":
       doAssert ts_parser_set_language(parser, tree_sitter_c())
+    of ".py", ".nim", ".nims", ".nimble":
+      doAssert ts_parser_set_language(parser, tree_sitter_python())
     else:
       ts_parser_delete(parser)
       return (nil, nil)
