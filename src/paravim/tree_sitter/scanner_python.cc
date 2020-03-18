@@ -1,12 +1,14 @@
 #include "tree_sitter/parser.h"
-#include <vector>
 #include <cwctype>
 #include <cstring>
 #include <cassert>
 #include <stdio.h>
+
+#define STB_DS_IMPLEMENTATION
+#include "stb_ds.h"
+
 namespace {
 
-using std::vector;
 using std::iswspace;
 using std::memcpy;
 
@@ -93,45 +95,43 @@ struct Delimiter {
 struct Scanner {
   Scanner() {
     assert(sizeof(Delimiter) == sizeof(char));
+    arrsetlen(delimiter_stack, 0);
+    arrsetlen(indent_length_stack, 0);
     deserialize(NULL, 0);
   }
 
   unsigned serialize(char *buffer) {
     size_t i = 0;
 
-    size_t stack_size = delimiter_stack.size();
+    size_t stack_size = arrlen(delimiter_stack);
     if (stack_size > UINT8_MAX) stack_size = UINT8_MAX;
     buffer[i++] = stack_size;
 
-    memcpy(&buffer[i], delimiter_stack.data(), stack_size);
+    memcpy(&buffer[i], delimiter_stack, stack_size);
     i += stack_size;
 
-    vector<uint16_t>::iterator
-      iter = indent_length_stack.begin() + 1,
-      end = indent_length_stack.end();
-
-    for (; iter != end && i < TREE_SITTER_SERIALIZATION_BUFFER_SIZE; ++iter) {
-      buffer[i++] = *iter;
+    for (int iter = 1; iter != arrlen(indent_length_stack) && i < TREE_SITTER_SERIALIZATION_BUFFER_SIZE; ++iter) {
+      buffer[i++] = indent_length_stack[iter];
     }
 
     return i;
   }
 
   void deserialize(const char *buffer, unsigned length) {
-    delimiter_stack.clear();
-    indent_length_stack.clear();
-    indent_length_stack.push_back(0);
+    arrfree(delimiter_stack);
+    arrfree(indent_length_stack);
+    arrput(indent_length_stack, 0);
 
     if (length > 0) {
       size_t i = 0;
 
       size_t delimiter_count = (uint8_t)buffer[i++];
-      delimiter_stack.resize(delimiter_count);
-      memcpy(delimiter_stack.data(), &buffer[i], delimiter_count);
+      arrsetlen(delimiter_stack, delimiter_count);
+      memcpy(delimiter_stack, &buffer[i], delimiter_count);
       i += delimiter_count;
 
       for (; i < length; i++) {
-        indent_length_stack.push_back(buffer[i]);
+        arrput(indent_length_stack, buffer[i]);
       }
     }
   }
@@ -145,8 +145,8 @@ struct Scanner {
   }
 
   bool scan(TSLexer *lexer, const bool *valid_symbols) {
-    if (valid_symbols[STRING_CONTENT] && !valid_symbols[INDENT] && !delimiter_stack.empty()) {
-      Delimiter delimiter = delimiter_stack.back();
+    if (valid_symbols[STRING_CONTENT] && !valid_symbols[INDENT] && arrlen(delimiter_stack) != 0) {
+      Delimiter delimiter = arrlast(delimiter_stack);
       int32_t end_character = delimiter.end_character();
       bool has_content = false;
       while (lexer->lookahead) {
@@ -190,7 +190,7 @@ struct Scanner {
                 } else {
                   lexer->advance(lexer, false);
                   lexer->mark_end(lexer);
-                  delimiter_stack.pop_back();
+                  arrpop(delimiter_stack);
                   lexer->result_symbol = STRING_END;
                 }
                 return true;
@@ -201,7 +201,7 @@ struct Scanner {
               lexer->result_symbol = STRING_CONTENT;
             } else {
               lexer->advance(lexer, false);
-              delimiter_stack.pop_back();
+              arrpop(delimiter_stack);
               lexer->result_symbol = STRING_END;
             }
             lexer->mark_end(lexer);
@@ -250,8 +250,8 @@ struct Scanner {
         indent_length = 0;
         skip(lexer);
       } else if (lexer->lookahead == 0) {
-        if (valid_symbols[DEDENT] && indent_length_stack.size() > 1) {
-          indent_length_stack.pop_back();
+        if (valid_symbols[DEDENT] && arrlen(indent_length_stack) > 1) {
+          arrpop(indent_length_stack);
           lexer->result_symbol = DEDENT;
           return true;
         }
@@ -268,14 +268,14 @@ struct Scanner {
     }
 
     if (has_newline) {
-      if (indent_length > indent_length_stack.back() && valid_symbols[INDENT]) {
-        indent_length_stack.push_back(indent_length);
+      if (indent_length > arrlast(indent_length_stack) && valid_symbols[INDENT]) {
+        arrput(indent_length_stack, indent_length);
         lexer->result_symbol = INDENT;
         return true;
       }
 
-      if (indent_length < indent_length_stack.back() && valid_symbols[DEDENT]) {
-        indent_length_stack.pop_back();
+      if (indent_length < arrlast(indent_length_stack) && valid_symbols[DEDENT]) {
+        arrpop(indent_length_stack);
         lexer->result_symbol = DEDENT;
         return true;
       }
@@ -335,7 +335,7 @@ struct Scanner {
       }
 
       if (delimiter.end_character()) {
-        delimiter_stack.push_back(delimiter);
+        arrput(delimiter_stack, delimiter);
         lexer->result_symbol = STRING_START;
         return true;
       } else if (has_flags) {
@@ -346,8 +346,8 @@ struct Scanner {
     return false;
   }
 
-  vector<uint16_t> indent_length_stack;
-  vector<Delimiter> delimiter_stack;
+  uint16_t *indent_length_stack = NULL;
+  Delimiter *delimiter_stack = NULL;
 };
 
 }
