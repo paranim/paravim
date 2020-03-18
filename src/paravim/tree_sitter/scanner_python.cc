@@ -1,16 +1,20 @@
 #include "tree_sitter/parser.h"
-#include <cwctype>
-#include <cstring>
-#include <cassert>
+#include <wctype.h>
+#include <string.h>
+#include <assert.h>
 #include <stdio.h>
 
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
 
-namespace {
+struct Delimiter {
+  char flags = 0;
+};
 
-using std::iswspace;
-using std::memcpy;
+struct Scanner {
+  uint16_t *indent_length_stack = NULL;
+  Delimiter *delimiter_stack = NULL;
+};
 
 enum TokenType {
   NEWLINE,
@@ -21,261 +25,187 @@ enum TokenType {
   STRING_END,
 };
 
-struct Delimiter {
-  enum {
-    SingleQuote = 1 << 0,
-    DoubleQuote = 1 << 1,
-    BackQuote = 1 << 2,
-    Raw = 1 << 3,
-    Format = 1 << 4,
-    Triple = 1 << 5,
-    Bytes = 1 << 6,
-  };
-
-  Delimiter() : flags(0) {}
-
-  bool is_format() const {
-    return flags & Format;
-  }
-
-  bool is_raw() const {
-    return flags & Raw;
-  }
-
-  bool is_triple() const {
-    return flags & Triple;
-  }
-
-  bool is_bytes() const {
-    return flags & Bytes;
-  }
-
-  int32_t end_character() const {
-    if (flags & SingleQuote) return '\'';
-    if (flags & DoubleQuote) return '"';
-    if (flags & BackQuote) return '`';
-    return 0;
-  }
-
-  void set_format() {
-    flags |= Format;
-  }
-
-  void set_raw() {
-    flags |= Raw;
-  }
-
-  void set_triple() {
-    flags |= Triple;
-  }
-
-  void set_bytes() {
-    flags |= Bytes;
-  }
-
-  void set_end_character(int32_t character) {
-    switch (character) {
-      case '\'':
-        flags |= SingleQuote;
-        break;
-      case '"':
-        flags |= DoubleQuote;
-        break;
-      case '`':
-        flags |= BackQuote;
-        break;
-      default:
-        assert(false);
-    }
-  }
-
-  char flags;
+enum {
+  SingleQuote = 1 << 0,
+  DoubleQuote = 1 << 1,
+  BackQuote = 1 << 2,
+  Raw = 1 << 3,
+  Format = 1 << 4,
+  Triple = 1 << 5,
+  Bytes = 1 << 6,
 };
 
-struct Scanner {
-  Scanner() {
-    assert(sizeof(Delimiter) == sizeof(char));
-    arrsetlen(delimiter_stack, 0);
-    arrsetlen(indent_length_stack, 0);
-    deserialize(NULL, 0);
+bool is_format(char *flags) {
+  return *flags & Format;
+}
+
+bool is_raw(char *flags) {
+  return *flags & Raw;
+}
+
+bool is_triple(char *flags) {
+  return *flags & Triple;
+}
+
+bool is_bytes(char *flags) {
+  return *flags & Bytes;
+}
+
+int32_t end_character(char *flags) {
+  if (*flags & SingleQuote) return '\'';
+  if (*flags & DoubleQuote) return '"';
+  if (*flags & BackQuote) return '`';
+  return 0;
+}
+
+void set_format(char *flags) {
+  *flags |= Format;
+}
+
+void set_raw(char *flags) {
+  *flags |= Raw;
+}
+
+void set_triple(char *flags) {
+  *flags |= Triple;
+}
+
+void set_bytes(char *flags) {
+  *flags |= Bytes;
+}
+
+void set_end_character(char *flags, int32_t character) {
+  switch (character) {
+    case '\'':
+      *flags |= SingleQuote;
+      break;
+    case '"':
+      *flags |= DoubleQuote;
+      break;
+    case '`':
+      *flags |= BackQuote;
+      break;
+    default:
+      assert(false);
   }
+}
 
-  unsigned serialize(char *buffer) {
-    size_t i = 0;
+void advance(TSLexer *lexer) {
+  lexer->advance(lexer, false);
+}
 
-    size_t stack_size = arrlen(delimiter_stack);
-    if (stack_size > UINT8_MAX) stack_size = UINT8_MAX;
-    buffer[i++] = stack_size;
+void skip(TSLexer *lexer) {
+  lexer->advance(lexer, true);
+}
 
-    memcpy(&buffer[i], delimiter_stack, stack_size);
-    i += stack_size;
-
-    for (int iter = 1; iter != arrlen(indent_length_stack) && i < TREE_SITTER_SERIALIZATION_BUFFER_SIZE; ++iter) {
-      buffer[i++] = indent_length_stack[iter];
-    }
-
-    return i;
-  }
-
-  void deserialize(const char *buffer, unsigned length) {
-    arrfree(delimiter_stack);
-    arrfree(indent_length_stack);
-    arrput(indent_length_stack, 0);
-
-    if (length > 0) {
-      size_t i = 0;
-
-      size_t delimiter_count = (uint8_t)buffer[i++];
-      arrsetlen(delimiter_stack, delimiter_count);
-      memcpy(delimiter_stack, &buffer[i], delimiter_count);
-      i += delimiter_count;
-
-      for (; i < length; i++) {
-        arrput(indent_length_stack, buffer[i]);
-      }
-    }
-  }
-
-  void advance(TSLexer *lexer) {
-    lexer->advance(lexer, false);
-  }
-
-  void skip(TSLexer *lexer) {
-    lexer->advance(lexer, true);
-  }
-
-  bool scan(TSLexer *lexer, const bool *valid_symbols) {
-    if (valid_symbols[STRING_CONTENT] && !valid_symbols[INDENT] && arrlen(delimiter_stack) != 0) {
-      Delimiter delimiter = arrlast(delimiter_stack);
-      int32_t end_character = delimiter.end_character();
-      bool has_content = false;
-      while (lexer->lookahead) {
-        if (lexer->lookahead == '{' && delimiter.is_format()) {
+bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
+  if (valid_symbols[STRING_CONTENT] && !valid_symbols[INDENT] && arrlen(scanner->delimiter_stack) != 0) {
+    Delimiter delimiter = arrlast(scanner->delimiter_stack);
+    int32_t end_char = end_character(&delimiter.flags);
+    bool has_content = false;
+    while (lexer->lookahead) {
+      if (lexer->lookahead == '{' && is_format(&delimiter.flags)) {
+        lexer->mark_end(lexer);
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '{') {
+          lexer->advance(lexer, false);
+        } else {
+          lexer->result_symbol = STRING_CONTENT;
+          return has_content;
+        }
+      } else if (lexer->lookahead == '\\') {
+        if (is_raw(&delimiter.flags)) {
+          lexer->advance(lexer, false);
+        } else if (is_bytes(&delimiter.flags)) {
+            lexer->mark_end(lexer);
+            lexer->advance(lexer, false);
+            if (lexer->lookahead == 'N' || lexer->lookahead == 'u' || lexer->lookahead == 'U') {
+              // In bytes string, \N{...}, \uXXXX and \UXXXXXXXX are not escape sequences
+              // https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals
+              lexer->advance(lexer, false);
+            } else {
+                lexer->result_symbol = STRING_CONTENT;
+                return has_content;
+            }
+        } else {
+          lexer->mark_end(lexer);
+          lexer->result_symbol = STRING_CONTENT;
+          return has_content;
+        }
+      } else if (lexer->lookahead == end_char) {
+        if (is_triple(&delimiter.flags)) {
           lexer->mark_end(lexer);
           lexer->advance(lexer, false);
-          if (lexer->lookahead == '{') {
+          if (lexer->lookahead == end_char) {
             lexer->advance(lexer, false);
-          } else {
-            lexer->result_symbol = STRING_CONTENT;
-            return has_content;
-          }
-        } else if (lexer->lookahead == '\\') {
-          if (delimiter.is_raw()) {
-            lexer->advance(lexer, false);
-          } else if (delimiter.is_bytes()) {
-              lexer->mark_end(lexer);
-              lexer->advance(lexer, false);
-              if (lexer->lookahead == 'N' || lexer->lookahead == 'u' || lexer->lookahead == 'U') {
-                // In bytes string, \N{...}, \uXXXX and \UXXXXXXXX are not escape sequences
-                // https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals
-                lexer->advance(lexer, false);
+            if (lexer->lookahead == end_char) {
+              if (has_content) {
+                lexer->result_symbol = STRING_CONTENT;
               } else {
-                  lexer->result_symbol = STRING_CONTENT;
-                  return has_content;
+                lexer->advance(lexer, false);
+                lexer->mark_end(lexer);
+                arrpop(scanner->delimiter_stack);
+                lexer->result_symbol = STRING_END;
               }
-          } else {
-            lexer->mark_end(lexer);
-            lexer->result_symbol = STRING_CONTENT;
-            return has_content;
-          }
-        } else if (lexer->lookahead == end_character) {
-          if (delimiter.is_triple()) {
-            lexer->mark_end(lexer);
-            lexer->advance(lexer, false);
-            if (lexer->lookahead == end_character) {
-              lexer->advance(lexer, false);
-              if (lexer->lookahead == end_character) {
-                if (has_content) {
-                  lexer->result_symbol = STRING_CONTENT;
-                } else {
-                  lexer->advance(lexer, false);
-                  lexer->mark_end(lexer);
-                  arrpop(delimiter_stack);
-                  lexer->result_symbol = STRING_END;
-                }
-                return true;
-              }
+              return true;
             }
-          } else {
-            if (has_content) {
-              lexer->result_symbol = STRING_CONTENT;
-            } else {
-              lexer->advance(lexer, false);
-              arrpop(delimiter_stack);
-              lexer->result_symbol = STRING_END;
-            }
-            lexer->mark_end(lexer);
-            return true;
           }
-        } else if (lexer->lookahead == '\n' && has_content && !delimiter.is_triple()) {
-          return false;
-        }
-        advance(lexer);
-        has_content = true;
-      }
-    }
-
-    lexer->mark_end(lexer);
-
-    bool has_comment = false;
-    bool has_newline = false;
-    uint32_t indent_length = 0;
-    for (;;) {
-      if (lexer->lookahead == '\n') {
-        has_newline = true;
-        indent_length = 0;
-        skip(lexer);
-      } else if (lexer->lookahead == ' ') {
-        indent_length++;
-        skip(lexer);
-      } else if (lexer->lookahead == '\r') {
-        indent_length = 0;
-        skip(lexer);
-      } else if (lexer->lookahead == '\t') {
-        indent_length += 8;
-        skip(lexer);
-      } else if (lexer->lookahead == '#') {
-        has_comment = true;
-        while (lexer->lookahead && lexer->lookahead != '\n') skip(lexer);
-        skip(lexer);
-        indent_length = 0;
-      } else if (lexer->lookahead == '\\') {
-        skip(lexer);
-        if (iswspace(lexer->lookahead)) {
-          skip(lexer);
         } else {
-          return false;
-        }
-      } else if (lexer->lookahead == '\f') {
-        indent_length = 0;
-        skip(lexer);
-      } else if (lexer->lookahead == 0) {
-        if (valid_symbols[DEDENT] && arrlen(indent_length_stack) > 1) {
-          arrpop(indent_length_stack);
-          lexer->result_symbol = DEDENT;
+          if (has_content) {
+            lexer->result_symbol = STRING_CONTENT;
+          } else {
+            lexer->advance(lexer, false);
+            arrpop(scanner->delimiter_stack);
+            lexer->result_symbol = STRING_END;
+          }
+          lexer->mark_end(lexer);
           return true;
         }
-
-        if (valid_symbols[NEWLINE]) {
-          lexer->result_symbol = NEWLINE;
-          return true;
-        }
-
-        break;
-      } else {
-        break;
+      } else if (lexer->lookahead == '\n' && has_content && !is_triple(&delimiter.flags)) {
+        return false;
       }
+      advance(lexer);
+      has_content = true;
     }
+  }
 
-    if (has_newline) {
-      if (indent_length > arrlast(indent_length_stack) && valid_symbols[INDENT]) {
-        arrput(indent_length_stack, indent_length);
-        lexer->result_symbol = INDENT;
-        return true;
+  lexer->mark_end(lexer);
+
+  bool has_comment = false;
+  bool has_newline = false;
+  uint32_t indent_length = 0;
+  for (;;) {
+    if (lexer->lookahead == '\n') {
+      has_newline = true;
+      indent_length = 0;
+      skip(lexer);
+    } else if (lexer->lookahead == ' ') {
+      indent_length++;
+      skip(lexer);
+    } else if (lexer->lookahead == '\r') {
+      indent_length = 0;
+      skip(lexer);
+    } else if (lexer->lookahead == '\t') {
+      indent_length += 8;
+      skip(lexer);
+    } else if (lexer->lookahead == '#') {
+      has_comment = true;
+      while (lexer->lookahead && lexer->lookahead != '\n') skip(lexer);
+      skip(lexer);
+      indent_length = 0;
+    } else if (lexer->lookahead == '\\') {
+      skip(lexer);
+      if (iswspace(lexer->lookahead)) {
+        skip(lexer);
+      } else {
+        return false;
       }
-
-      if (indent_length < arrlast(indent_length_stack) && valid_symbols[DEDENT]) {
-        arrpop(indent_length_stack);
+    } else if (lexer->lookahead == '\f') {
+      indent_length = 0;
+      skip(lexer);
+    } else if (lexer->lookahead == 0) {
+      if (valid_symbols[DEDENT] && arrlen(scanner->indent_length_stack) > 1) {
+        arrpop(scanner->indent_length_stack);
         lexer->result_symbol = DEDENT;
         return true;
       }
@@ -284,99 +214,158 @@ struct Scanner {
         lexer->result_symbol = NEWLINE;
         return true;
       }
+
+      break;
+    } else {
+      break;
     }
-
-    if (!has_comment && valid_symbols[STRING_START]) {
-      Delimiter delimiter;
-
-      bool has_flags = false;
-      while (lexer->lookahead) {
-        if (lexer->lookahead == 'f' || lexer->lookahead == 'F') {
-          delimiter.set_format();
-        } else if (lexer->lookahead == 'r' || lexer->lookahead == 'R') {
-          delimiter.set_raw();
-        } else if (lexer->lookahead == 'b' || lexer->lookahead == 'B') {
-          delimiter.set_bytes();
-        } else if (lexer->lookahead != 'u' && lexer->lookahead != 'U') {
-          break;
-        }
-        has_flags = true;
-        advance(lexer);
-      }
-
-      if (lexer->lookahead == '`') {
-        delimiter.set_end_character('`');
-        advance(lexer);
-        lexer->mark_end(lexer);
-      } else if (lexer->lookahead == '\'') {
-        delimiter.set_end_character('\'');
-        advance(lexer);
-        lexer->mark_end(lexer);
-        if (lexer->lookahead == '\'') {
-          advance(lexer);
-          if (lexer->lookahead == '\'') {
-            advance(lexer);
-            lexer->mark_end(lexer);
-            delimiter.set_triple();
-          }
-        }
-      } else if (lexer->lookahead == '"') {
-        delimiter.set_end_character('"');
-        advance(lexer);
-        lexer->mark_end(lexer);
-        if (lexer->lookahead == '"') {
-          advance(lexer);
-          if (lexer->lookahead == '"') {
-            advance(lexer);
-            lexer->mark_end(lexer);
-            delimiter.set_triple();
-          }
-        }
-      }
-
-      if (delimiter.end_character()) {
-        arrput(delimiter_stack, delimiter);
-        lexer->result_symbol = STRING_START;
-        return true;
-      } else if (has_flags) {
-        return false;
-      }
-    }
-
-    return false;
   }
 
-  uint16_t *indent_length_stack = NULL;
-  Delimiter *delimiter_stack = NULL;
-};
+  if (has_newline) {
+    if (indent_length > arrlast(scanner->indent_length_stack) && valid_symbols[INDENT]) {
+      arrput(scanner->indent_length_stack, indent_length);
+      lexer->result_symbol = INDENT;
+      return true;
+    }
 
+    if (indent_length < arrlast(scanner->indent_length_stack) && valid_symbols[DEDENT]) {
+      arrpop(scanner->indent_length_stack);
+      lexer->result_symbol = DEDENT;
+      return true;
+    }
+
+    if (valid_symbols[NEWLINE]) {
+      lexer->result_symbol = NEWLINE;
+      return true;
+    }
+  }
+
+  if (!has_comment && valid_symbols[STRING_START]) {
+    Delimiter delimiter;
+
+    bool has_flags = false;
+    while (lexer->lookahead) {
+      if (lexer->lookahead == 'f' || lexer->lookahead == 'F') {
+        set_format(&delimiter.flags);
+      } else if (lexer->lookahead == 'r' || lexer->lookahead == 'R') {
+        set_raw(&delimiter.flags);
+      } else if (lexer->lookahead == 'b' || lexer->lookahead == 'B') {
+        set_bytes(&delimiter.flags);
+      } else if (lexer->lookahead != 'u' && lexer->lookahead != 'U') {
+        break;
+      }
+      has_flags = true;
+      advance(lexer);
+    }
+
+    if (lexer->lookahead == '`') {
+      set_end_character(&delimiter.flags, '`');
+      advance(lexer);
+      lexer->mark_end(lexer);
+    } else if (lexer->lookahead == '\'') {
+      set_end_character(&delimiter.flags, '\'');
+      advance(lexer);
+      lexer->mark_end(lexer);
+      if (lexer->lookahead == '\'') {
+        advance(lexer);
+        if (lexer->lookahead == '\'') {
+          advance(lexer);
+          lexer->mark_end(lexer);
+          set_triple(&delimiter.flags);
+        }
+      }
+    } else if (lexer->lookahead == '"') {
+      set_end_character(&delimiter.flags, '"');
+      advance(lexer);
+      lexer->mark_end(lexer);
+      if (lexer->lookahead == '"') {
+        advance(lexer);
+        if (lexer->lookahead == '"') {
+          advance(lexer);
+          lexer->mark_end(lexer);
+          set_triple(&delimiter.flags);
+        }
+      }
+    }
+
+    if (end_character(&delimiter.flags)) {
+      arrput(scanner->delimiter_stack, delimiter);
+      lexer->result_symbol = STRING_START;
+      return true;
+    } else if (has_flags) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+unsigned serialize(Scanner *scanner, char *buffer) {
+  size_t i = 0;
+
+  size_t stack_size = arrlen(scanner->delimiter_stack);
+  if (stack_size > UINT8_MAX) stack_size = UINT8_MAX;
+  buffer[i++] = stack_size;
+
+  memcpy(&buffer[i], scanner->delimiter_stack, stack_size);
+  i += stack_size;
+
+  for (int iter = 1; iter != arrlen(scanner->indent_length_stack) && i < TREE_SITTER_SERIALIZATION_BUFFER_SIZE; ++iter) {
+    buffer[i++] = scanner->indent_length_stack[iter];
+  }
+
+  return i;
+}
+
+void deserialize(Scanner *scanner, const char *buffer, unsigned length) {
+  arrfree(scanner->delimiter_stack);
+  arrfree(scanner->indent_length_stack);
+  arrput(scanner->indent_length_stack, 0);
+
+  if (length > 0) {
+    size_t i = 0;
+
+    size_t delimiter_count = (uint8_t)buffer[i++];
+    arrsetlen(scanner->delimiter_stack, delimiter_count);
+    memcpy(scanner->delimiter_stack, &buffer[i], delimiter_count);
+    i += delimiter_count;
+
+    for (; i < length; i++) {
+      arrput(scanner->indent_length_stack, buffer[i]);
+    }
+  }
+}
+
+void init_scanner(Scanner *scanner) {
+  assert(sizeof(struct Delimiter) == sizeof(char));
+  arrsetlen(scanner->delimiter_stack, 0);
+  arrsetlen(scanner->indent_length_stack, 0);
+  deserialize(scanner, NULL, 0);
 }
 
 extern "C" {
 
 void *tree_sitter_python_external_scanner_create() {
-  return new Scanner();
+  Scanner *scanner = calloc(1, sizeof(struct Scanner));
+  init_scanner(scanner);
+  return scanner;
 }
 
 bool tree_sitter_python_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
-  Scanner *scanner = static_cast<Scanner *>(payload);
-  return scanner->scan(lexer, valid_symbols);
+  return scan(payload, lexer, valid_symbols);
 }
 
 unsigned tree_sitter_python_external_scanner_serialize(void *payload, char *buffer) {
-  Scanner *scanner = static_cast<Scanner *>(payload);
-  return scanner->serialize(buffer);
+  return serialize(payload, buffer);
 }
 
 void tree_sitter_python_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
-  Scanner *scanner = static_cast<Scanner *>(payload);
-  scanner->deserialize(buffer, length);
+  deserialize(payload, buffer, length);
 }
 
 void tree_sitter_python_external_scanner_destroy(void *payload) {
-  Scanner *scanner = static_cast<Scanner *>(payload);
-  delete scanner;
+  free(payload);
 }
 
 }
