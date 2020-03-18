@@ -4,7 +4,7 @@
 {.compile: "tree_sitter/parser_c.c".}
 {.compile: "tree_sitter/parser_json.c".}
 {.compile: "tree_sitter/parser_python.c".}
-{.compile: "tree_sitter/scanner_python.cc".}
+{.compile: "tree_sitter/scanner_python.c".}
 
 import tree_sitter/tree_sitter/api
 from os import nil

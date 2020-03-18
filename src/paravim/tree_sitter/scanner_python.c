@@ -7,13 +7,9 @@
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
 
-struct Delimiter {
-  char flags = 0;
-};
-
 struct Scanner {
-  uint16_t *indent_length_stack = NULL;
-  Delimiter *delimiter_stack = NULL;
+  uint16_t *indent_length_stack;
+  char *delimiter_stack;
 };
 
 enum TokenType {
@@ -98,13 +94,13 @@ void skip(TSLexer *lexer) {
   lexer->advance(lexer, true);
 }
 
-bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
+bool scan(struct Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
   if (valid_symbols[STRING_CONTENT] && !valid_symbols[INDENT] && arrlen(scanner->delimiter_stack) != 0) {
-    Delimiter delimiter = arrlast(scanner->delimiter_stack);
-    int32_t end_char = end_character(&delimiter.flags);
+    char delimiter = arrlast(scanner->delimiter_stack);
+    int32_t end_char = end_character(&delimiter);
     bool has_content = false;
     while (lexer->lookahead) {
-      if (lexer->lookahead == '{' && is_format(&delimiter.flags)) {
+      if (lexer->lookahead == '{' && is_format(&delimiter)) {
         lexer->mark_end(lexer);
         lexer->advance(lexer, false);
         if (lexer->lookahead == '{') {
@@ -114,9 +110,9 @@ bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
           return has_content;
         }
       } else if (lexer->lookahead == '\\') {
-        if (is_raw(&delimiter.flags)) {
+        if (is_raw(&delimiter)) {
           lexer->advance(lexer, false);
-        } else if (is_bytes(&delimiter.flags)) {
+        } else if (is_bytes(&delimiter)) {
             lexer->mark_end(lexer);
             lexer->advance(lexer, false);
             if (lexer->lookahead == 'N' || lexer->lookahead == 'u' || lexer->lookahead == 'U') {
@@ -133,7 +129,7 @@ bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
           return has_content;
         }
       } else if (lexer->lookahead == end_char) {
-        if (is_triple(&delimiter.flags)) {
+        if (is_triple(&delimiter)) {
           lexer->mark_end(lexer);
           lexer->advance(lexer, false);
           if (lexer->lookahead == end_char) {
@@ -161,7 +157,7 @@ bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
           lexer->mark_end(lexer);
           return true;
         }
-      } else if (lexer->lookahead == '\n' && has_content && !is_triple(&delimiter.flags)) {
+      } else if (lexer->lookahead == '\n' && has_content && !is_triple(&delimiter)) {
         return false;
       }
       advance(lexer);
@@ -241,16 +237,16 @@ bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
   }
 
   if (!has_comment && valid_symbols[STRING_START]) {
-    Delimiter delimiter;
+    char delimiter = 0;
 
     bool has_flags = false;
     while (lexer->lookahead) {
       if (lexer->lookahead == 'f' || lexer->lookahead == 'F') {
-        set_format(&delimiter.flags);
+        set_format(&delimiter);
       } else if (lexer->lookahead == 'r' || lexer->lookahead == 'R') {
-        set_raw(&delimiter.flags);
+        set_raw(&delimiter);
       } else if (lexer->lookahead == 'b' || lexer->lookahead == 'B') {
-        set_bytes(&delimiter.flags);
+        set_bytes(&delimiter);
       } else if (lexer->lookahead != 'u' && lexer->lookahead != 'U') {
         break;
       }
@@ -259,11 +255,11 @@ bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
     }
 
     if (lexer->lookahead == '`') {
-      set_end_character(&delimiter.flags, '`');
+      set_end_character(&delimiter, '`');
       advance(lexer);
       lexer->mark_end(lexer);
     } else if (lexer->lookahead == '\'') {
-      set_end_character(&delimiter.flags, '\'');
+      set_end_character(&delimiter, '\'');
       advance(lexer);
       lexer->mark_end(lexer);
       if (lexer->lookahead == '\'') {
@@ -271,11 +267,11 @@ bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
         if (lexer->lookahead == '\'') {
           advance(lexer);
           lexer->mark_end(lexer);
-          set_triple(&delimiter.flags);
+          set_triple(&delimiter);
         }
       }
     } else if (lexer->lookahead == '"') {
-      set_end_character(&delimiter.flags, '"');
+      set_end_character(&delimiter, '"');
       advance(lexer);
       lexer->mark_end(lexer);
       if (lexer->lookahead == '"') {
@@ -283,12 +279,12 @@ bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
         if (lexer->lookahead == '"') {
           advance(lexer);
           lexer->mark_end(lexer);
-          set_triple(&delimiter.flags);
+          set_triple(&delimiter);
         }
       }
     }
 
-    if (end_character(&delimiter.flags)) {
+    if (end_character(&delimiter)) {
       arrput(scanner->delimiter_stack, delimiter);
       lexer->result_symbol = STRING_START;
       return true;
@@ -300,7 +296,7 @@ bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
   return false;
 }
 
-unsigned serialize(Scanner *scanner, char *buffer) {
+unsigned serialize(struct Scanner *scanner, char *buffer) {
   size_t i = 0;
 
   size_t stack_size = arrlen(scanner->delimiter_stack);
@@ -317,7 +313,7 @@ unsigned serialize(Scanner *scanner, char *buffer) {
   return i;
 }
 
-void deserialize(Scanner *scanner, const char *buffer, unsigned length) {
+void deserialize(struct Scanner *scanner, const char *buffer, unsigned length) {
   arrfree(scanner->delimiter_stack);
   arrfree(scanner->indent_length_stack);
   arrput(scanner->indent_length_stack, 0);
@@ -336,36 +332,31 @@ void deserialize(Scanner *scanner, const char *buffer, unsigned length) {
   }
 }
 
-void init_scanner(Scanner *scanner) {
-  assert(sizeof(struct Delimiter) == sizeof(char));
+void init_scanner(struct Scanner *scanner) {
   arrsetlen(scanner->delimiter_stack, 0);
   arrsetlen(scanner->indent_length_stack, 0);
   deserialize(scanner, NULL, 0);
 }
 
-extern "C" {
-
 void *tree_sitter_python_external_scanner_create() {
-  Scanner *scanner = calloc(1, sizeof(struct Scanner));
-  init_scanner(scanner);
+  void *scanner = calloc(1, sizeof(struct Scanner));
+  init_scanner((struct Scanner*) scanner);
   return scanner;
 }
 
 bool tree_sitter_python_external_scanner_scan(void *payload, TSLexer *lexer,
                                             const bool *valid_symbols) {
-  return scan(payload, lexer, valid_symbols);
+  return scan((struct Scanner*) payload, lexer, valid_symbols);
 }
 
 unsigned tree_sitter_python_external_scanner_serialize(void *payload, char *buffer) {
-  return serialize(payload, buffer);
+  return serialize((struct Scanner*) payload, buffer);
 }
 
 void tree_sitter_python_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
-  deserialize(payload, buffer, length);
+  deserialize((struct Scanner*) payload, buffer, length);
 }
 
 void tree_sitter_python_external_scanner_destroy(void *payload) {
-  free(payload);
-}
-
+  free((struct Scanner*) payload);
 }
