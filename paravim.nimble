@@ -6,7 +6,7 @@ description   = "A parasitic editor"
 license       = "Public Domain"
 srcDir        = "src"
 installExt    = @[
-  "nim", "txt", "ttf", "glsl",
+  "nim", "txt", "ttf", "glsl", "c", "h",
   when defined(windows):
     "dll"
   elif defined(macosx):
