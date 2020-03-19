@@ -1,6 +1,6 @@
 {.compile: "tree_sitter/lib.c".}
 {.compile: "tree_sitter/parser_javascript.c".}
-{.compile: "tree_sitter/parser_javascript_scanner.c".}
+{.compile: "tree_sitter/scanner_javascript.c".}
 {.compile: "tree_sitter/parser_c.c".}
 {.compile: "tree_sitter/parser_json.c".}
 {.compile: "tree_sitter/parser_python.c".}
