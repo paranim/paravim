@@ -40,6 +40,10 @@ proc deleteTree*(tree: pointer) =
   if tree != nil:
     ts_tree_delete(tree)
 
+proc deleteParser*(parser: pointer) =
+  if parser != nil:
+    ts_parser_delete(parser)
+
 proc echoTree*(tree: pointer) =
   if tree != nil:
     let

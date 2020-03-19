@@ -163,7 +163,9 @@ let rules* =
         session.retract(id, ScrollY, scrollY)
         session.retract(id, LineCount, lineCount)
         session.retract(id, Tree, tree)
+        tree_sitter.deleteTree(tree)
         session.retract(id, Parser, parser)
+        tree_sitter.deleteParser(parser)
         session.retract(id, CroppedText, croppedText)
     rule updateBuffer(Fact):
       what:
