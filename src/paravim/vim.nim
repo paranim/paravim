@@ -132,11 +132,15 @@ proc onBufEnter(buf: buf_T) =
         return
       else:
         tree_sitter.deleteTree(existingBuffer.tree)
+        tree_sitter.deleteParser(existingBuffer.parser)
         sessionId = existingBuffer.id
     else:
       sessionId = nextId
       nextId += 1
     # update or insert buffer
+    let (tree, parser) = tree_sitter.init(pathStr, lines)
+    session.insert(sessionId, Tree, tree)
+    session.insert(sessionId, Parser, parser)
     session.insert(sessionId, BufferId, bufferId)
     session.insert(sessionId, Path, pathStr)
     session.insert(sessionId, Lines, lines)
@@ -145,9 +149,6 @@ proc onBufEnter(buf: buf_T) =
     session.insert(sessionId, ScrollX, 0f)
     session.insert(sessionId, ScrollY, 0f)
     session.insert(sessionId, LineCount, count)
-    let (tree, parser) = tree_sitter.init(pathStr, lines)
-    session.insert(sessionId, Tree, tree)
-    session.insert(sessionId, Parser, parser)
 
 proc onBufDelete(buf: buf_T) =
   let bufferId = vimBufferGetId(buf)
