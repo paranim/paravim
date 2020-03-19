@@ -333,8 +333,6 @@ void deserialize(struct Scanner *scanner, const char *buffer, unsigned length) {
 }
 
 void init_scanner(struct Scanner *scanner) {
-  arrsetlen(scanner->delimiter_stack, 0);
-  arrsetlen(scanner->indent_length_stack, 0);
   deserialize(scanner, NULL, 0);
 }
 
@@ -358,5 +356,8 @@ void tree_sitter_python_external_scanner_deserialize(void *payload, const char *
 }
 
 void tree_sitter_python_external_scanner_destroy(void *payload) {
-  free((struct Scanner*) payload);
+  struct Scanner *scanner = (struct Scanner*) payload;
+  arrfree(scanner->indent_length_stack);
+  arrfree(scanner->delimiter_stack);
+  free(scanner);
 }
