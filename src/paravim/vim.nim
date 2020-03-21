@@ -132,8 +132,8 @@ proc onBufEnter(buf: buf_T) =
         return
       else:
         sessionId = existingBuffer.id
-        session.insert(Global, DeleteBuffer, sessionId)
-        session.retract(Global, DeleteBuffer, sessionId)
+        session.insert(Global, DeleteBuffer, bufferId)
+        session.retract(Global, DeleteBuffer, bufferId)
     else:
       sessionId = nextId
       nextId += 1
