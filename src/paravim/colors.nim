@@ -23,6 +23,5 @@ const
                    "integer": yellowColor,
                    "float": yellowColor,
                    "comment": grayColor,
-                   "type": cyanColor,
                    "op": grayColor,
                    }.toTable
