@@ -113,9 +113,6 @@ let rules* =
         (Global, VimCommandStart, commandStart)
         (Global, VimCommandPosition, commandPosition)
         (Global, VimCommandCompletion, commandCompletion)
-        (Global, VimVisualRange, visualRange)
-        (Global, VimSearchRanges, searchRanges)
-        (Global, VimShowSearch, showSearch)
     rule getCurrentBuffer(Fact):
       what:
         (Global, CurrentBufferId, bufferId)
@@ -129,6 +126,9 @@ let rules* =
         (id, Tree, tree)
         (id, Parser, parser)
         (id, CroppedText, croppedText)
+        (id, VimVisualRange, visualRange)
+        (id, VimSearchRanges, searchRanges)
+        (id, VimShowSearch, showSearch)
     rule getBuffer(Fact):
       what:
         (id, BufferId, bufferId)
@@ -141,6 +141,9 @@ let rules* =
         (id, Tree, tree)
         (id, Parser, parser)
         (id, CroppedText, croppedText)
+        (id, VimVisualRange, visualRange)
+        (id, VimSearchRanges, searchRanges)
+        (id, VimShowSearch, showSearch)
     rule deleteBuffer(Fact):
       what:
         (Global, DeleteBuffer, bufferId)
@@ -154,6 +157,9 @@ let rules* =
         (id, Tree, tree)
         (id, Parser, parser)
         (id, CroppedText, croppedText)
+        (id, VimVisualRange, visualRange)
+        (id, VimSearchRanges, searchRanges)
+        (id, VimShowSearch, showSearch)
       then:
         session.retract(id, BufferId, bufferId)
         session.retract(id, Lines, lines)
@@ -167,6 +173,9 @@ let rules* =
         session.retract(id, Parser, parser)
         tree_sitter.deleteParser(parser)
         session.retract(id, CroppedText, croppedText)
+        session.retract(id, VimVisualRange, visualRange)
+        session.retract(id, VimSearchRanges, searchRanges)
+        session.retract(id, VimShowSearch, showSearch)
     rule updateBuffer(Fact):
       what:
         (Global, BufferUpdate, bu)
@@ -379,8 +388,8 @@ proc tick*(game: RootGame, clear: bool) =
         e2.color(cursorColor)
         e.add(e2)
       # selection
-      if vim.visualRange != (0, 0, 0, 0):
-        let rects = buffers.rangeToRects(buffers.normalizeRange(vim.visualRange), currentBuffer.lines)
+      if currentBuffer.visualRange != (0, 0, 0, 0):
+        let rects = buffers.rangeToRects(buffers.normalizeRange(currentBuffer.visualRange), currentBuffer.lines)
         for (left, top, width, height) in rects:
           var e2 = uncompiledRectEntity
           e2.project(float(windowWidth), float(windowHeight))
@@ -391,8 +400,8 @@ proc tick*(game: RootGame, clear: bool) =
           e2.color(selectColor)
           e.add(e2)
       # search
-      if vim.showSearch:
-        for highlight in vim.searchRanges:
+      if currentBuffer.showSearch:
+        for highlight in currentBuffer.searchRanges:
           let rects = buffers.rangeToRects(highlight, currentBuffer.lines)
           for (left, top, width, height) in rects:
             var e2 = uncompiledRectEntity
