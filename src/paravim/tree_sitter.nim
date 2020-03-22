@@ -117,7 +117,7 @@ proc initInputEdit(bu: buffers.BufferUpdateTuple, lines: seq[string], newLines: 
     edit.new_end_point.row = firstLine.uint32
     edit.new_end_point.column = getLen(newLines, firstLine, 0).uint32
   elif lineCountChange == 0:
-    let lastLine = firstLine + (bu.lines.len - 1)
+    let lastLine = firstLine + max(bu.lines.len - 1, 0) # bu.lines.len shouldn't ever be 0, but just in case...
     for i in firstLine .. lastLine:
       edit.old_end_byte += getLen(lines, i, 0).uint32
       edit.new_end_byte += getLen(newLines, i, 0).uint32
