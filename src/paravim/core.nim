@@ -188,7 +188,7 @@ let rules* =
       then:
         session.retract(Global, BufferUpdate, bu)
         let newLines = buffers.updateLines(lines, bu)
-        let newTree = tree_sitter.editTree(tree, parser, bu.firstLine, bu.lineCountChange, lines, newLines)
+        let newTree = tree_sitter.editTree(tree, parser, bu, lines, newLines)
         session.insert(id, Tree, newTree)
         session.insert(id, Lines, newLines)
     rule resizeWindow(Fact):

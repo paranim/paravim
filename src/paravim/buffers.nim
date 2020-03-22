@@ -1,7 +1,5 @@
 import nimgl/opengl
-from tree_sitter import nil
 from text import nil
-from paratext/gl/text as ptext import nil
 from math import nil
 
 type
@@ -56,10 +54,3 @@ proc rangeToRects*(rangeData: RangeTuple, lines: seq[string]): seq[RectTuple] =
       width: float(endCol - startCol),
       height: 1.float
     ))
-
-proc getVisibleChars*(entity: text.ParavimTextEntity, linesToSkip: int, linesToCrop: int): tuple[charsToSkip: GLint, charsToCrop: GLint, charCounts: seq[GLint]] =
-  var charCounts = entity.uniforms.u_char_counts.data
-  let charsToSkip = math.sum(charCounts[0 ..< linesToSkip])
-  charCounts = charCounts[linesToSkip ..< linesToCrop]
-  let charsToCrop = charsToSkip + math.sum(charCounts)
-  (charsToSkip, charsToCrop, charCounts)

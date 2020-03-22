@@ -12,6 +12,7 @@ import tree_sitter/tree_sitter/api
 from os import nil
 from strutils import nil
 from colors import nil
+from buffers import nil
 import tables
 
 proc free(p: pointer) {.cdecl, importc: "free".}
@@ -94,7 +95,10 @@ proc getLen(arr: openArray[string], i: int, default: int): int =
   else:
     arr[i].len
 
-proc initInputEdit(firstLine: int, lineCountChange: int, lines: seq[string], newLines: seq[string]): TSInputEdit =
+proc initInputEdit(bu: buffers.BufferUpdateTuple, lines: seq[string], newLines: seq[string]): TSInputEdit =
+  let
+    firstLine = bu.firstLine
+    lineCountChange = bu.lineCountChange
   var edit: TSInputEdit
   for i in 0 ..< firstLine:
     edit.start_byte += lines[i].len.uint32
@@ -113,12 +117,16 @@ proc initInputEdit(firstLine: int, lineCountChange: int, lines: seq[string], new
     edit.new_end_point.row = firstLine.uint32
     edit.new_end_point.column = getLen(newLines, firstLine, 0).uint32
   elif lineCountChange == 0:
-    edit.old_end_byte += getLen(lines, firstLine, 0).uint32
-    edit.new_end_byte += getLen(newLines, firstLine, 0).uint32
-    edit.old_end_point.row = firstLine.uint32
-    edit.old_end_point.column = getLen(lines, firstLine, 0).uint32
-    edit.new_end_point.row = firstLine.uint32
-    edit.new_end_point.column = getLen(newLines, firstLine, 0).uint32
+    let lastLine = firstLine + (bu.lines.len - 1)
+    for i in firstLine .. lastLine:
+      edit.old_end_byte += getLen(lines, i, 0).uint32
+      edit.new_end_byte += getLen(newLines, i, 0).uint32
+    edit.old_end_byte += uint32(lastLine - firstLine) # newlines
+    edit.new_end_byte += uint32(lastLine - firstLine) # newlines
+    edit.old_end_point.row = lastLine.uint32
+    edit.old_end_point.column = getLen(lines, lastLine, 0).uint32
+    edit.new_end_point.row = lastLine.uint32
+    edit.new_end_point.column = getLen(newLines, lastLine, 0).uint32
   elif lineCountChange > 0:
     edit.old_end_byte += getLen(lines, firstLine, 0).uint32
     for i in firstLine .. firstLine + lineCountChange:
@@ -130,9 +138,9 @@ proc initInputEdit(firstLine: int, lineCountChange: int, lines: seq[string], new
     edit.new_end_point.column = getLen(newLines, firstLine + lineCountChange, 0).uint32
   edit
 
-proc editTree*(tree: pointer, parser: pointer, firstLine: int, lineCountChange: int, lines: seq[string], newLines: seq[string]): pointer =
+proc editTree*(tree: pointer, parser: pointer, bu: buffers.BufferUpdateTuple, lines: seq[string], newLines: seq[string]): pointer =
   if tree != nil:
-    var edit = initInputEdit(firstLine, lineCountChange, lines, newLines)
+    var edit = initInputEdit(bu, lines, newLines)
     ts_tree_edit(tree, edit.addr)
     let content = strutils.join(newLines, "\n")
     result = ts_parser_parse_string(parser, tree, content, content.len.uint32)
