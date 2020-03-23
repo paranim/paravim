@@ -72,7 +72,7 @@ proc updateSelection(id: int) =
 proc updateSearchHighlights(id: int) =
   if id >= 0:
     let vim = pararules.query(session, rules.getVim)
-    if vim.commandStart == ":":
+    if vim.mode == libvim.CommandLine.ord and vim.commandStart == ":":
       return
     var
       numHighlights: cint
