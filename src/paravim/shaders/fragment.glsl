@@ -1,4 +1,4 @@
-#version 410
+#version 330
 precision mediump float;
 uniform sampler2D u_image;
 uniform float u_alpha;
