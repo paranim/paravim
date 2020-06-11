@@ -468,6 +468,8 @@ proc tick*(game: RootGame, clear: bool) =
       render(game, e)
   elif vim.message != "":
     var e = deepCopy(monoEntity)
+    e.uniforms.u_start_line.data = 0
+    e.uniforms.u_start_line.disable = false
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, vim.message, [])
     e.project(float(windowWidth), float(windowHeight))
     e.translate(0f, float(windowHeight) - textHeight)
