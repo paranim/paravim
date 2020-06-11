@@ -91,6 +91,7 @@ proc updateSearchHighlights(id: int) =
     session.insert(id, VimSearchRanges, ranges)
 
 proc onInput*(input: string) =
+  session.insert(Global, VimMessage, "") # clear any pre-existing message
   let oldMode = vimGetMode()
   if oldMode == libvim.CommandLine.ord and input == "<Tab>":
     completeCommand()
@@ -184,6 +185,10 @@ proc onStopSearch() {.cdecl.} =
   let id = getCurrentSessionId()
   if id >= 0:
     session.insert(id, VimShowSearch, false)
+  session.insert(Global, VimMessage, "")
+
+proc onMessage(title: ptr char_u; msg: ptr char_u; priority: msgPriority_T) {.cdecl.} =
+  session.insert(Global, VimMessage, $ msg)
 
 proc init*(filesToOpen: seq[string], onQuit: QuitCallback) =
   vimSetAutoCommandCallback(onAutoCommand)
@@ -191,6 +196,7 @@ proc init*(filesToOpen: seq[string], onQuit: QuitCallback) =
   vimSetQuitCallback(onQuit)
   vimSetStopSearchHighlightCallback(onStopSearch)
   vimSetUnhandledEscapeCallback(onStopSearch)
+  vimSetMessageCallback(onMessage)
 
   vimInit(0, nil)
   vimExecute("set hidden")
@@ -210,6 +216,7 @@ proc init*(filesToOpen: seq[string], onQuit: QuitCallback) =
   session.insert(Global, VimCommandStart, "")
   session.insert(Global, VimCommandPosition, 0)
   session.insert(Global, VimCommandCompletion, "")
+  session.insert(Global, VimMessage, "")
 
   for fname in filesToOpen:
     discard vimBufferOpen(fname, 1, 0)

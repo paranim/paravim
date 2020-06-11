@@ -124,7 +124,7 @@ proc vimExecute*(cmd: cstring) {.cdecl, dynlib: getLib(), importc: "vimExecute".
 ##  Messages
 ## *
 
-#proc vimSetMessageCallback*(messageCallback: MessageCallback)
+proc vimSetMessageCallback*(messageCallback: MessageCallback) {.cdecl, dynlib: getLib(), importc: "vimSetMessageCallback".}
 ## *
 ##  Misc
 ##

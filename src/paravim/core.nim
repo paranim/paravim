@@ -39,6 +39,7 @@ type
     VimMode, VimCommandText, VimCommandStart,
     VimCommandPosition, VimCommandCompletion,
     VimVisualRange, VimSearchRanges, VimShowSearch,
+    VimMessage,
     AsciiArt, DeleteBuffer,
     BufferId, Lines, Path,
     CursorLine, CursorColumn, ScrollX, ScrollY,
@@ -67,6 +68,7 @@ schema Fact(Id, Attr):
   VimVisualRange: RangeTuple
   VimSearchRanges: RangeTuples
   VimShowSearch: bool
+  VimMessage: string
   AsciiArt: string
   DeleteBuffer: int
   BufferId: int
@@ -113,6 +115,7 @@ let rules* =
         (Global, VimCommandStart, commandStart)
         (Global, VimCommandPosition, commandPosition)
         (Global, VimCommandCompletion, commandCompletion)
+        (Global, VimMessage, message)
     rule getCurrentBuffer(Fact):
       what:
         (Global, CurrentBufferId, bufferId)
@@ -429,7 +432,14 @@ proc tick*(game: RootGame, clear: bool) =
     e.project(float(windowWidth), float(windowHeight))
     e.translate(0f, float(windowHeight) - textHeight)
     e.scale(float(windowWidth), textHeight)
-    e.color(if vim.mode == libvim.CommandLine.ord: tanColor else: bgColor)
+    e.color(
+      if vim.mode == libvim.CommandLine.ord:
+        tanColor
+      elif vim.message != "":
+        redColor
+      else:
+        bgColor
+    )
     render(game, e)
   if vim.mode == libvim.CommandLine.ord:
     # command line cursor
@@ -456,3 +466,10 @@ proc tick*(game: RootGame, clear: bool) =
       e.translate(0f, float(windowHeight) - textHeight)
       e.scale(fontSize, fontSize)
       render(game, e)
+  elif vim.message != "":
+    var e = deepCopy(monoEntity)
+    discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, vim.message, [])
+    e.project(float(windowWidth), float(windowHeight))
+    e.translate(0f, float(windowHeight) - textHeight)
+    e.scale(fontSize, fontSize)
+    render(game, e)
