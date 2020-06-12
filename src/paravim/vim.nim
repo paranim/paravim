@@ -185,7 +185,6 @@ proc onStopSearch() {.cdecl.} =
   let id = getCurrentSessionId()
   if id >= 0:
     session.insert(id, VimShowSearch, false)
-  session.insert(Global, VimMessage, "")
 
 proc onMessage(title: ptr char_u; msg: ptr char_u; priority: msgPriority_T) {.cdecl.} =
   session.insert(Global, VimMessage, $ msg)
