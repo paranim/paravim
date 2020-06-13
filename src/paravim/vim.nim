@@ -191,13 +191,14 @@ proc onStopSearch() {.cdecl.} =
 proc onMessage(title: ptr char_u; msg: ptr char_u; priority: msgPriority_T) {.cdecl.} =
   session.insert(Global, VimMessage, $ msg)
 
-proc init*(filesToOpen: seq[string], onQuit: QuitCallback) =
+proc init*(filesToOpen: seq[string], onQuit: QuitCallback, onYank: YankCallback) =
   vimSetAutoCommandCallback(onAutoCommand)
   vimSetBufferUpdateCallback(onBufferUpdate)
   vimSetQuitCallback(onQuit)
   vimSetStopSearchHighlightCallback(onStopSearch)
   vimSetUnhandledEscapeCallback(onStopSearch)
   vimSetMessageCallback(onMessage)
+  vimSetYankCallback(onYank)
 
   vimInit(0, nil)
   vimExecute("set hidden")

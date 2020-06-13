@@ -237,7 +237,7 @@ proc vimWindowSetHeight*(height: cint) {.cdecl, dynlib: getLib(), importc: "vimW
 
 #proc vimSetClipboardGetCallback*(callback: ClipboardGetCallback)
 proc vimGetMode*(): cint {.cdecl, dynlib: getLib(), importc: "vimGetMode".}
-#proc vimSetYankCallback*(callback: YankCallback)
+proc vimSetYankCallback*(callback: YankCallback) {.cdecl, dynlib: getLib(), importc: "vimSetYankCallback".}
 ##  Callbacks for when the `:intro` and `:version` commands are used
 ##
 ##   The Vim license has some specific requirements when implementing these methods:

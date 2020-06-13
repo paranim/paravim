@@ -3,9 +3,11 @@ from paranim/gl import nil
 from paravim/core import nil
 from paravim/vim import nil
 from paravim/libvim import nil
+from paravim/structs import nil
 import tables
 import bitops
 from os import nil
+from strutils import nil
 
 const glfwToVimSpecials =
   {GLFWKey.BACKSPACE: "BS",
@@ -61,8 +63,21 @@ proc cursorPosCallback*(window: GLFWWindow, xpos: float64, ypos: float64) {.cdec
 proc frameSizeCallback*(window: GLFWWindow, width: int32, height: int32) {.cdecl.} =
   core.onWindowResize(width, height)
 
+var window: GLFWWindow # this is necessary because cdecl functions can't capture local variables
+
 proc init*(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
-  vim.init(params, proc (buf: pointer; isForced: cint) {.cdecl.} = quit(0))
+  window = w
+
+  proc onQuit(buf: pointer; isForced: cint) {.cdecl.} =
+    window.setWindowShouldClose(true)
+
+  proc onYank(yankInfo: ptr structs.yankInfo_T) {.cdecl.} =
+    let
+      lines = cstringArrayToSeq(cast[cstringArray](yankInfo.lines), yankInfo.numLines)
+      content = strutils.join(lines, "\n")
+    window.setClipboardString(content)
+
+  vim.init(params, onQuit, onYank)
 
   var width, height: int32
   w.getFramebufferSize(width.addr, height.addr)
