@@ -28,7 +28,7 @@ proc updateLines*(lines: seq[string], bu: BufferUpdateTuple): seq[string] =
     if lines.len > 0: # see test: "delete all lines"
       result.add(lines[bu.firstLine + linesToRemove ..< lines.len])
 
-proc normalizeRange*(rangeData: RangeTuple): RangeTuple =
+proc normalizeRange*(rangeData: RangeTuple, forceLeftToRight: bool): RangeTuple =
   var (startLine, startCol, endLine, endCol) = rangeData
   # make sure the range is always going the same direction
   if startLine > endLine or (startLine == endLine and startCol > endCol):
@@ -36,8 +36,10 @@ proc normalizeRange*(rangeData: RangeTuple): RangeTuple =
     startCol = rangeData.endColumn
     endLine = rangeData.startLine
     endCol = rangeData.startColumn
-  # the column the cursor is in doesn't seem to be included in the range
-  # add it manually so it is included in the selection
+  # make sure the block is top left to bottom right
+  if forceLeftToRight and startCol > endCol:
+    swap(startCol, endCol)
+  # include the last column in the selection
   endCol += 1
   (startLine, startCol, endLine, endCol)
 

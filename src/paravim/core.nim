@@ -396,12 +396,11 @@ proc tick*(game: RootGame, clear: bool) =
       # selection
       if currentBuffer.visualRange != (0, 0, 0, 0):
         let
-          rangeData = buffers.normalizeRange(currentBuffer.visualRange)
           rects =
             if currentBuffer.visualBlockMode:
-              @[buffers.rangeToRect(rangeData)]
+              @[buffers.rangeToRect(buffers.normalizeRange(currentBuffer.visualRange, true))]
             else:
-              buffers.rangeToRects(rangeData, currentBuffer.lines)
+              buffers.rangeToRects(buffers.normalizeRange(currentBuffer.visualRange, false), currentBuffer.lines)
         for (left, top, width, height) in rects:
           var e2 = uncompiledRectEntity
           e2.project(float(windowWidth), float(windowHeight))
