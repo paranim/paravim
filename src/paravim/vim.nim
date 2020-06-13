@@ -91,16 +91,7 @@ proc updateSearchHighlights(id: int) =
     vimFree(highlights)
     session.insert(id, VimSearchRanges, ranges)
 
-proc onInput*(input: string) =
-  session.insert(Global, VimMessage, "") # clear any pre-existing message
-  let oldMode = vimGetMode()
-  if oldMode == libvim.CommandLine.ord and input == "<Tab>":
-    completeCommand()
-  elif oldMode == libvim.CommandLine.ord and input == "<Enter>":
-    executeCommand()
-  else:
-    session.insert(Global, AsciiArt, "")
-    vimInput(input)
+proc updateAfterInput(input: string, oldMode: int) =
   let mode = vimGetMode()
   session.insert(Global, VimMode, mode)
   let id = getCurrentSessionId()
@@ -111,6 +102,28 @@ proc onInput*(input: string) =
     updateCommand(id, input, oldMode != mode)
   updateSelection(id)
   updateSearchHighlights(id)
+
+proc onInput*(input: string) =
+  session.insert(Global, VimMessage, "") # clear any pre-existing message
+  let oldMode = vimGetMode()
+  if oldMode == libvim.CommandLine.ord and input == "<Tab>":
+    completeCommand()
+  elif oldMode == libvim.CommandLine.ord and input == "<Enter>":
+    executeCommand()
+  else:
+    session.insert(Global, AsciiArt, "")
+    vimInput(input)
+  updateAfterInput(input, oldMode)
+
+proc onBulkInput*(input: string) =
+  let oldMode = vimGetMode()
+  vimExecute("set paste")
+  for ch in input:
+    if ch == '\r':
+      continue
+    vimInput($ ch)
+  vimExecute("set nopaste")
+  updateAfterInput(input, oldMode)
 
 proc onBufEnter(buf: buf_T) =
   let

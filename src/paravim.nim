@@ -45,6 +45,11 @@ proc keyCallback*(window: GLFWWindow, key: int32, scancode: int32,
         core.fontDec()
       elif key == GLFWKey.Equal:
         core.fontInc()
+      elif key == GLFWKey.V:
+        if libvim.vimGetMode() == libvim.Insert.ord:
+          vim.onBulkInput($ window.getClipboardString())
+        else:
+          vim.onInput("<C-V>")
       elif glfwToVimChars.hasKey(key):
         vim.onInput("<C-" & (if isShift: "S-" else: "") & glfwToVimChars[key] & ">")
     elif glfwToVimSpecials.hasKey(key):
