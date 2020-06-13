@@ -33,7 +33,7 @@ proc executeCommand() =
   else:
     vimInput("<Enter>")
 
-proc updateCommand(id: int, input: string, start: bool) =
+proc updateCommand(input: string, start: bool) =
   let
     commandText = $ vimCommandLineGetText()
     commandPos = vimCommandLineGetPosition()
@@ -42,8 +42,8 @@ proc updateCommand(id: int, input: string, start: bool) =
   if start:
     let s = if not validCommandStarts.contains(input[0]): ":" else: input
     session.insert(Global, VimCommandStart, s)
-    if s != ":" and id >= 0:
-      session.insert(id, VimShowSearch, true)
+    if s != ":":
+      session.insert(Global, VimShowSearch, true)
   var completion = ""
   let strippedText = strutils.strip(commandText)
   if strippedText.len > 0 and
@@ -99,7 +99,7 @@ proc updateAfterInput(input: string, oldMode: int) =
     session.insert(id, CursorLine, vimCursorGetLine() - 1)
     session.insert(id, CursorColumn, vimCursorGetColumn())
   if mode == libvim.CommandLine.ord:
-    updateCommand(id, input, oldMode != mode)
+    updateCommand(input, oldMode != mode)
   updateSelection(id)
   updateSearchHighlights(id)
 
@@ -169,7 +169,6 @@ proc onBufEnter(buf: buf_T) =
     session.insert(sessionId, VimVisualRange, (0, 0, 0, 0))
     session.insert(sessionId, VimVisualBlockMode, false)
     session.insert(sessionId, VimSearchRanges, @[])
-    session.insert(sessionId, VimShowSearch, false)
 
 proc onBufDelete(buf: buf_T) =
   let bufferId = vimBufferGetId(buf)
@@ -197,9 +196,7 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   session.insert(Global, BufferUpdate, (id.int, lines, firstLine.int, bufferUpdate.xtra.int))
 
 proc onStopSearch() {.cdecl.} =
-  let id = getCurrentSessionId()
-  if id >= 0:
-    session.insert(id, VimShowSearch, false)
+  session.insert(Global, VimShowSearch, false)
 
 proc onMessage(title: ptr char_u; msg: ptr char_u; priority: msgPriority_T) {.cdecl.} =
   session.insert(Global, VimMessage, $ msg)
@@ -232,6 +229,7 @@ proc init*(filesToOpen: seq[string], onQuit: QuitCallback, onYank: YankCallback)
   session.insert(Global, VimCommandPosition, 0)
   session.insert(Global, VimCommandCompletion, "")
   session.insert(Global, VimMessage, "")
+  session.insert(Global, VimShowSearch, false)
 
   for fname in filesToOpen:
     discard vimBufferOpen(fname, 1, 0)

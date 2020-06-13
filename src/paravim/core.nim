@@ -118,6 +118,7 @@ let rules* =
         (Global, VimCommandPosition, commandPosition)
         (Global, VimCommandCompletion, commandCompletion)
         (Global, VimMessage, message)
+        (Global, VimShowSearch, showSearch)
     rule getCurrentBuffer(Fact):
       what:
         (Global, CurrentBufferId, bufferId)
@@ -134,7 +135,6 @@ let rules* =
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
-        (id, VimShowSearch, showSearch)
     rule getBuffer(Fact):
       what:
         (id, BufferId, bufferId)
@@ -149,7 +149,6 @@ let rules* =
         (id, CroppedText, croppedText)
         (id, VimVisualRange, visualRange)
         (id, VimSearchRanges, searchRanges)
-        (id, VimShowSearch, showSearch)
     rule deleteBuffer(Fact):
       what:
         (Global, DeleteBuffer, bufferId)
@@ -165,7 +164,6 @@ let rules* =
         (id, CroppedText, croppedText)
         (id, VimVisualRange, visualRange)
         (id, VimSearchRanges, searchRanges)
-        (id, VimShowSearch, showSearch)
       then:
         session.retract(id, BufferId, bufferId)
         session.retract(id, Lines, lines)
@@ -181,7 +179,6 @@ let rules* =
         session.retract(id, CroppedText, croppedText)
         session.retract(id, VimVisualRange, visualRange)
         session.retract(id, VimSearchRanges, searchRanges)
-        session.retract(id, VimShowSearch, showSearch)
     rule updateBuffer(Fact):
       what:
         (Global, BufferUpdate, bu)
@@ -411,7 +408,7 @@ proc tick*(game: RootGame, clear: bool) =
           e2.color(selectColor)
           e.add(e2)
       # search
-      if currentBuffer.showSearch:
+      if vim.showSearch:
         for highlight in currentBuffer.searchRanges:
           let rects = buffers.rangeToRects(highlight, currentBuffer.lines)
           for (left, top, width, height) in rects:
