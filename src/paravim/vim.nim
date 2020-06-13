@@ -66,6 +66,7 @@ proc updateSelection(id: int) =
       var startPos, endPos: pos_T
       vimVisualGetRange(startPos.addr, endPos.addr)
       session.insert(id, VimVisualRange, (int(startPos.lnum-1), int(startPos.col), int(endPos.lnum-1), int(endPos.col)))
+      session.insert(id, VimVisualBlockMode, vimVisualGetType() == 22)
     else:
       session.insert(id, VimVisualRange, (0, 0, 0, 0))
 
@@ -153,6 +154,7 @@ proc onBufEnter(buf: buf_T) =
     session.insert(sessionId, Tree, tree)
     session.insert(sessionId, Parser, parser)
     session.insert(sessionId, VimVisualRange, (0, 0, 0, 0))
+    session.insert(sessionId, VimVisualBlockMode, false)
     session.insert(sessionId, VimSearchRanges, @[])
     session.insert(sessionId, VimShowSearch, false)
 

@@ -177,7 +177,7 @@ proc vimOptionGetTabSize*(): cint {.cdecl, dynlib: getLib(), importc: "vimOption
 ##  Visual Mode
 ## *
 
-#proc vimVisualGetType*(): cint
+proc vimVisualGetType*(): cint {.cdecl, dynlib: getLib(), importc: "vimVisualGetType".}
 proc vimVisualIsActive*(): cint {.cdecl, dynlib: getLib(), importc: "vimVisualIsActive".}
 #proc vimSelectIsActive*(): cint
 ##

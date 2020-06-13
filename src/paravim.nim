@@ -29,7 +29,8 @@ const glfwToVimChars =
    GLFWKey.M: "M",
    GLFWKey.P: "P",
    GLFWKey.R: "R",
-   GLFWKey.U: "U"}.toTable
+   GLFWKey.U: "U",
+   GLFWKey.V: "V"}.toTable
 
 proc keyCallback*(window: GLFWWindow, key: int32, scancode: int32,
                   action: int32, mods: int32) {.cdecl.} =

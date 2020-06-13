@@ -38,7 +38,8 @@ type
     FontSize, CurrentBufferId, BufferUpdate,
     VimMode, VimCommandText, VimCommandStart,
     VimCommandPosition, VimCommandCompletion,
-    VimVisualRange, VimSearchRanges, VimShowSearch,
+    VimVisualRange, VimVisualBlockMode,
+    VimSearchRanges, VimShowSearch,
     VimMessage,
     AsciiArt, DeleteBuffer,
     BufferId, Lines, Path,
@@ -66,6 +67,7 @@ schema Fact(Id, Attr):
   VimCommandPosition: int
   VimCommandCompletion: string
   VimVisualRange: RangeTuple
+  VimVisualBlockMode: bool
   VimSearchRanges: RangeTuples
   VimShowSearch: bool
   VimMessage: string
@@ -130,6 +132,7 @@ let rules* =
         (id, Parser, parser)
         (id, CroppedText, croppedText)
         (id, VimVisualRange, visualRange)
+        (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
         (id, VimShowSearch, showSearch)
     rule getBuffer(Fact):
@@ -392,7 +395,13 @@ proc tick*(game: RootGame, clear: bool) =
         e.add(e2)
       # selection
       if currentBuffer.visualRange != (0, 0, 0, 0):
-        let rects = buffers.rangeToRects(buffers.normalizeRange(currentBuffer.visualRange), currentBuffer.lines)
+        let
+          rangeData = buffers.normalizeRange(currentBuffer.visualRange)
+          rects =
+            if currentBuffer.visualBlockMode:
+              @[buffers.rangeToRect(rangeData)]
+            else:
+              buffers.rangeToRects(rangeData, currentBuffer.lines)
         for (left, top, width, height) in rects:
           var e2 = uncompiledRectEntity
           e2.project(float(windowWidth), float(windowHeight))

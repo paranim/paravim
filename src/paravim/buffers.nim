@@ -54,3 +54,12 @@ proc rangeToRects*(rangeData: RangeTuple, lines: seq[string]): seq[RectTuple] =
       width: float(endCol - startCol),
       height: 1.float
     ))
+
+proc rangeToRect*(rangeData: RangeTuple): RectTuple =
+  let (startLine, startCol, endLine, endCol) = rangeData
+  (
+    left: startCol.float,
+    top: startLine.float,
+    width: float(endCol - startCol),
+    height: float(endLine - startLine + 1)
+  )
