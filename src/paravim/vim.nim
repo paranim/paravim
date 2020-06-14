@@ -27,7 +27,7 @@ const validCommandStarts = {':', '?', '/'}
 
 proc executeCommand() =
   let vim = pararules.query(session, rules.getVim)
-  if asciiArt.hasKey(vim.commandText):
+  if vim.commandStart == ":" and asciiArt.hasKey(vim.commandText):
     session.insert(Global, AsciiArt, vim.commandText)
     vimInput("<Esc>")
   else:
