@@ -95,17 +95,12 @@ proc updateSearchHighlights(id: int) =
     vimFree(highlights)
     session.insert(id, VimSearchRanges, ranges)
 
-proc updateAfterInput(input: string, oldMode: int) =
-  let mode = vimGetMode()
+proc updateAfterInput(mode: int) =
   session.insert(Global, VimMode, mode)
   let id = getCurrentSessionId()
   if id >= 0:
     session.insert(id, CursorLine, vimCursorGetLine() - 1)
     session.insert(id, CursorColumn, vimCursorGetColumn())
-  if mode == libvim.CommandLine.ord:
-    if oldMode != mode:
-      updateCommandStart(input)
-    updateCommand()
   updateSelection(id)
   updateSearchHighlights(id)
 
@@ -119,17 +114,21 @@ proc onInput*(input: string) =
   else:
     session.insert(Global, AsciiArt, "")
     vimInput(input)
-  updateAfterInput(input, oldMode)
+  let mode = vimGetMode()
+  if mode == libvim.CommandLine.ord:
+    if mode != oldMode:
+      updateCommandStart(input)
+    updateCommand()
+  updateAfterInput(mode)
 
 proc onBulkInput*(input: string) =
-  let oldMode = vimGetMode()
   vimExecute("set paste")
   for ch in input:
     if ch == '\r':
       continue
     vimInput($ ch)
   vimExecute("set nopaste")
-  updateAfterInput(input, oldMode)
+  updateAfterInput(vimGetMode())
 
 proc onBufEnter(buf: buf_T) =
   let
