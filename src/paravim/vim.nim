@@ -93,8 +93,7 @@ proc updateSearchHighlights(id: int) =
   vimFree(highlights)
   session.insert(id, VimSearchRanges, ranges)
 
-proc updateAfterInput(mode: int) =
-  session.insert(Global, VimMode, mode)
+proc updateAfterInput() =
   let id = getCurrentSessionId()
   if id >= 0:
     session.insert(id, CursorLine, vimCursorGetLine() - 1)
@@ -113,11 +112,12 @@ proc onInput*(input: string) =
     session.insert(Global, AsciiArt, "")
     vimInput(input)
   let mode = vimGetMode()
+  session.insert(Global, VimMode, mode)
   if mode == libvim.CommandLine.ord:
     if mode != oldMode:
       updateCommandStart(input)
     updateCommand()
-  updateAfterInput(mode)
+  updateAfterInput()
 
 proc onBulkInput*(input: string) =
   vimExecute("set paste")
@@ -126,7 +126,7 @@ proc onBulkInput*(input: string) =
       continue
     vimInput($ ch)
   vimExecute("set nopaste")
-  updateAfterInput(vimGetMode())
+  updateAfterInput()
 
 proc onBufEnter(buf: buf_T) =
   let
