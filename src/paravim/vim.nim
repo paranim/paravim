@@ -23,27 +23,31 @@ proc completeCommand() =
     for i in firstPart.len ..< vim.commandCompletion.len:
       vimInput($ vim.commandCompletion[i])
 
-const validCommandStarts = {':', '?', '/'}
-
 proc executeCommand() =
   let vim = pararules.query(session, rules.getVim)
-  if vim.commandStart == ":" and asciiArt.hasKey(vim.commandText):
+  if vim.commandStart == ':' and asciiArt.hasKey(vim.commandText):
     session.insert(Global, AsciiArt, vim.commandText)
     vimInput("<Esc>")
   else:
     vimInput("<Enter>")
 
-proc updateCommand(input: string, start: bool) =
+proc updateCommandStart(input: string) =
+  const
+    validCommandStarts = {':', '?', '/'}
+    searchCommandStarts = {'?', '/'}
+  var s = input[0]
+  if not validCommandStarts.contains(s):
+    s = ':'
+  session.insert(Global, VimCommandStart, s)
+  if searchCommandStarts.contains(s):
+    session.insert(Global, VimShowSearch, true)
+
+proc updateCommand() =
   let
     commandText = $ vimCommandLineGetText()
     commandPos = vimCommandLineGetPosition()
   session.insert(Global, VimCommandText, commandText)
   session.insert(Global, VimCommandPosition, commandPos)
-  if start:
-    let s = if not validCommandStarts.contains(input[0]): ":" else: input
-    session.insert(Global, VimCommandStart, s)
-    if s != ":":
-      session.insert(Global, VimShowSearch, true)
   var completion = ""
   let strippedText = strutils.strip(commandText)
   if strippedText.len > 0 and
@@ -73,7 +77,7 @@ proc updateSelection(id: int) =
 proc updateSearchHighlights(id: int) =
   if id >= 0:
     let vim = pararules.query(session, rules.getVim)
-    if vim.mode == libvim.CommandLine.ord and vim.commandStart == ":":
+    if vim.mode == libvim.CommandLine.ord and vim.commandStart == ':':
       return
     var
       numHighlights: cint
@@ -99,7 +103,9 @@ proc updateAfterInput(input: string, oldMode: int) =
     session.insert(id, CursorLine, vimCursorGetLine() - 1)
     session.insert(id, CursorColumn, vimCursorGetColumn())
   if mode == libvim.CommandLine.ord:
-    updateCommand(input, oldMode != mode)
+    if oldMode != mode:
+      updateCommandStart(input)
+    updateCommand()
   updateSelection(id)
   updateSearchHighlights(id)
 
@@ -225,7 +231,7 @@ proc init*(filesToOpen: seq[string], onQuit: QuitCallback, onYank: YankCallback)
 
   session.insert(Global, VimMode, vimGetMode())
   session.insert(Global, VimCommandText, "")
-  session.insert(Global, VimCommandStart, "")
+  session.insert(Global, VimCommandStart, ':')
   session.insert(Global, VimCommandPosition, 0)
   session.insert(Global, VimCommandCompletion, "")
   session.insert(Global, VimMessage, "")

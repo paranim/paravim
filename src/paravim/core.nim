@@ -63,7 +63,7 @@ schema Fact(Id, Attr):
   BufferUpdate: BufferUpdateTuple
   VimMode: int
   VimCommandText: string
-  VimCommandStart: string
+  VimCommandStart: char
   VimCommandPosition: int
   VimCommandCompletion: string
   VimVisualRange: RangeTuple
