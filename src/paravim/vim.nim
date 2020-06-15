@@ -65,35 +65,33 @@ proc updateCommand() =
   session.insert(Global, VimCommandCompletion, completion)
 
 proc updateSelection(id: int) =
-  if id >= 0:
-    if vimVisualIsActive() == 1:
-      var startPos, endPos: pos_T
-      vimVisualGetRange(startPos.addr, endPos.addr)
-      session.insert(id, VimVisualRange, (int(startPos.lnum-1), int(startPos.col), int(endPos.lnum-1), int(endPos.col)))
-      session.insert(id, VimVisualBlockMode, vimVisualGetType() == 22)
-    else:
-      session.insert(id, VimVisualRange, (0, 0, 0, 0))
+  if vimVisualIsActive() == 1:
+    var startPos, endPos: pos_T
+    vimVisualGetRange(startPos.addr, endPos.addr)
+    session.insert(id, VimVisualRange, (int(startPos.lnum-1), int(startPos.col), int(endPos.lnum-1), int(endPos.col)))
+    session.insert(id, VimVisualBlockMode, vimVisualGetType() == 22)
+  else:
+    session.insert(id, VimVisualRange, (0, 0, 0, 0))
 
 proc updateSearchHighlights(id: int) =
-  if id >= 0:
-    let vim = pararules.query(session, rules.getVim)
-    if vim.mode == libvim.CommandLine.ord and vim.commandStart == ':':
-      return
-    var
-      numHighlights: cint
-      highlights: ptr searchHighlight_T
-      ranges: seq[buffers.RangeTuple]
-    vimSearchGetHighlights(1, vimBufferGetLineCount(vimBufferGetCurrent()).clong, numHighlights.addr, highlights.addr)
-    let arr = cast[ptr UncheckedArray[searchHighlight_T]](highlights)
-    for i in 0 ..< numHighlights:
-      ranges.add((
-        startLine: int(arr[i].start.lnum-1),
-        startColumn: int(arr[i].start.col),
-        endLine: int(arr[i].`end`.lnum-1),
-        endColumn: int(arr[i].`end`.col)
-      ))
-    vimFree(highlights)
-    session.insert(id, VimSearchRanges, ranges)
+  let vim = pararules.query(session, rules.getVim)
+  if vim.mode == libvim.CommandLine.ord and vim.commandStart == ':':
+    return
+  var
+    numHighlights: cint
+    highlights: ptr searchHighlight_T
+    ranges: seq[buffers.RangeTuple]
+  vimSearchGetHighlights(1, vimBufferGetLineCount(vimBufferGetCurrent()).clong, numHighlights.addr, highlights.addr)
+  let arr = cast[ptr UncheckedArray[searchHighlight_T]](highlights)
+  for i in 0 ..< numHighlights:
+    ranges.add((
+      startLine: int(arr[i].start.lnum-1),
+      startColumn: int(arr[i].start.col),
+      endLine: int(arr[i].`end`.lnum-1),
+      endColumn: int(arr[i].`end`.col)
+    ))
+  vimFree(highlights)
+  session.insert(id, VimSearchRanges, ranges)
 
 proc updateAfterInput(mode: int) =
   session.insert(Global, VimMode, mode)
@@ -101,8 +99,8 @@ proc updateAfterInput(mode: int) =
   if id >= 0:
     session.insert(id, CursorLine, vimCursorGetLine() - 1)
     session.insert(id, CursorColumn, vimCursorGetColumn())
-  updateSelection(id)
-  updateSearchHighlights(id)
+    updateSelection(id)
+    updateSearchHighlights(id)
 
 proc onInput*(input: string) =
   session.insert(Global, VimMessage, "") # clear any pre-existing message
