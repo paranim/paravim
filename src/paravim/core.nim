@@ -14,7 +14,7 @@ from glm import nil
 from libvim import nil
 import tables
 from strutils import nil
-from times import nil
+import times
 from tree_sitter import nil
 
 const
