@@ -239,7 +239,7 @@ let rules* =
         lines.len != lineCount
       then:
         session.insert(id, LineCount, lines.len)
-    rule updateScrollX(Fact):
+    rule updateScrollTargetX(Fact):
       what:
         (Global, WindowWidth, windowWidth)
         (Global, FontSize, fontSize)
@@ -253,10 +253,10 @@ let rules* =
           textViewWidth = windowWidth.float
           scrollRight = scrollX + textViewWidth
         if cursorLeft < scrollX:
-          session.insert(id, ScrollX, cursorLeft)
+          session.insert(id, ScrollTargetX, cursorLeft)
         elif cursorRight > scrollRight:
-          session.insert(id, ScrollX, cursorRight - textViewWidth)
-    rule updateScrollY(Fact):
+          session.insert(id, ScrollTargetX, cursorRight - textViewWidth)
+    rule updateScrollTargetY(Fact):
       what:
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
@@ -271,12 +271,10 @@ let rules* =
           textViewHeight = windowHeight.float - textHeight
           scrollBottom = scrollY + textViewHeight
           documentBottom = lineCount.float * textHeight
-        if documentBottom > textViewHeight and scrollY + textViewHeight > documentBottom:
-          session.insert(id, ScrollY, documentBottom - textViewHeight)
-        elif cursorTop < scrollY:
-          session.insert(id, ScrollY, cursorTop)
+        if cursorTop < scrollY:
+          session.insert(id, ScrollTargetY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
-          session.insert(id, ScrollY, cursorBottom - textViewHeight)
+          session.insert(id, ScrollTargetY, cursorBottom - textViewHeight)
     rule updateCroppedText(Fact):
       what:
         (Global, InitComplete, true)
