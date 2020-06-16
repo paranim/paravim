@@ -287,11 +287,10 @@ let rules* =
       then:
         var e = deepCopy(monoEntity)
         let
-          fontHeight = text.monoFont.height
-          textHeight = fontHeight * fontSize
+          fontHeight = text.monoFont.height * fontSize
           lineCount = lines.len
-          linesToSkip = min(int(scrollY / textHeight), lineCount).max(0)
-          linesToCrop = min(linesToSkip + int(windowHeight.float / textHeight) + 1, lineCount)
+          linesToSkip = min(int(scrollY / fontHeight), lineCount).max(0)
+          linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, lineCount)
           parsed = tree_sitter.parse(tree)
         for i in linesToSkip ..< linesToCrop:
           discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
