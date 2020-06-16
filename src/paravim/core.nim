@@ -17,6 +17,7 @@ from strutils import nil
 import times
 from tree_sitter import nil
 from scroll import nil
+from sequtils import nil
 
 const
   fontSizeStep = 1/16
@@ -49,7 +50,8 @@ type
     ScrollX, ScrollY,
     ScrollTargetX, ScrollTargetY,
     ScrollSpeedX, ScrollSpeedY,
-    LineCount, Tree, Parser, CroppedText
+    MaxCharCount, LineCount,
+    Tree, Parser, CroppedText
   Strings = seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
@@ -90,6 +92,7 @@ schema Fact(Id, Attr):
   ScrollTargetY: float
   ScrollSpeedX: float
   ScrollSpeedY: float
+  MaxCharCount: int
   LineCount: int
   Tree: pointer
   Parser: pointer
@@ -142,6 +145,7 @@ let rules* =
         (id, ScrollTargetY, scrollTargetY)
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
+        (id, MaxCharCount, maxCharCount)
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
@@ -161,6 +165,7 @@ let rules* =
         (id, ScrollTargetY, scrollTargetY)
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
+        (id, MaxCharCount, maxCharCount)
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
@@ -180,6 +185,7 @@ let rules* =
         (id, ScrollTargetY, scrollTargetY)
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
+        (id, MaxCharCount, maxCharCount)
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
@@ -197,6 +203,7 @@ let rules* =
         session.retract(id, ScrollTargetY, scrollTargetY)
         session.retract(id, ScrollSpeedX, scrollSpeedX)
         session.retract(id, ScrollSpeedY, scrollSpeedY)
+        session.retract(id, MaxCharCount, maxCharCount)
         session.retract(id, LineCount, lineCount)
         session.retract(id, Tree, tree)
         tree_sitter.deleteTree(tree)
@@ -231,14 +238,19 @@ let rules* =
           fontHeight = text.monoFont.height * fontSize
         libvim.vimWindowSetWidth(int32(windowWidth.float / fontWidth))
         libvim.vimWindowSetHeight(int32(windowHeight.float / fontHeight))
-    rule updateLineCount(Fact):
+    rule updateCounts(Fact):
       what:
         (id, Lines, lines)
         (id, LineCount, lineCount, then = false)
-      cond:
-        lines.len != lineCount
       then:
-        session.insert(id, LineCount, lines.len)
+        if lines.len != lineCount:
+          session.insert(id, LineCount, lines.len)
+        var maxCharCount = 0
+        for line in lines:
+          let count = line.len
+          if count > maxCharcount:
+            maxCharCount = count
+        session.insert(id, MaxCharCount, maxCharCount)
     rule updateScrollTargetX(Fact):
       what:
         (Global, WindowWidth, windowWidth)
@@ -297,6 +309,36 @@ let rules* =
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
         session.insert(id, CroppedText, e)
+    rule rubberBandEffectX(Fact):
+      what:
+        (Global, WindowWidth, windowWidth)
+        (Global, FontSize, fontSize)
+        (id, ScrollTargetX, scrollTargetX)
+        (id, MaxCharCount, maxCharCount)
+      then:
+        let
+          fontWidth = text.monoFontWidth * fontSize
+          textWidth = fontWidth * maxCharCount.float
+          maxX = textWidth - windowWidth.float
+          newScrollTargetX = scrollTargetX.min(maxX).max(0)
+        if newScrollTargetX != scrollTargetX:
+          session.insert(id, ScrollTargetX, newScrollTargetX)
+          session.insert(id, ScrollSpeedX, scroll.minScrollSpeed)
+    rule rubberBandEffectY(Fact):
+      what:
+        (Global, WindowHeight, windowHeight)
+        (Global, FontSize, fontSize)
+        (id, ScrollTargetY, scrollTargetY)
+        (id, LineCount, lineCount)
+      then:
+        let
+          fontHeight = text.monoFont.height * fontSize
+          textHeight = fontHeight * lineCount.float
+          maxY = textHeight - (windowHeight.float - fontHeight)
+          newScrollTargetY = scrollTargetY.min(maxY).max(0)
+        if newScrollTargetY != scrollTargetY:
+          session.insert(id, ScrollTargetY, newScrollTargetY)
+          session.insert(id, ScrollSpeedY, scroll.minScrollSpeed)
     rule moveCameraToTarget(Fact):
       what:
         (Global, DeltaTime, deltaTime)
@@ -356,10 +398,10 @@ proc onScroll*(xoffset: float64, yoffset: float64) =
       buffer.scrollSpeedX, buffer.scrollSpeedY
     )
     ret = scroll.startScrollingCamera(scrollData, xoffset, yoffset)
-  session.insert(buffer.id, ScrollTargetX, ret.targetX)
-  session.insert(buffer.id, ScrollTargetY, ret.targetY)
   session.insert(buffer.id, ScrollSpeedX, ret.speedX)
   session.insert(buffer.id, ScrollSpeedY, ret.speedY)
+  session.insert(buffer.id, ScrollTargetX, ret.targetX)
+  session.insert(buffer.id, ScrollTargetY, ret.targetY)
 
 proc fontDec*() =
   let

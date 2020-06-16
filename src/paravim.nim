@@ -113,8 +113,8 @@ proc tick*(game: gl.RootGame, clear: bool): bool =
     ts = glfwGetTime()
     deltaTime = ts - totalTime
   totalTime = ts
+  result = core.tick(game, clear)
   core.insert(core.session, core.Global, core.DeltaTime, deltaTime)
-  core.tick(game, clear)
 
 proc tick*(game: gl.RootGame): bool =
   tick(game, false)

@@ -6,7 +6,7 @@ type
 const
   scrollSpeed = 40.0
   scrollLimit = 10.0
-  minScrollSpeed = 5.0
+  minScrollSpeed* = 5.0
   deceleration = 0.8
 
 func decelerate(speed: float): float =
