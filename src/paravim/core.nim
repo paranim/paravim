@@ -145,10 +145,6 @@ let rules* =
         (id, ScrollTargetY, scrollTargetY)
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
-        (id, MaxCharCount, maxCharCount)
-        (id, LineCount, lineCount)
-        (id, Tree, tree)
-        (id, Parser, parser)
         (id, CroppedText, croppedText)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
@@ -165,12 +161,9 @@ let rules* =
         (id, ScrollTargetY, scrollTargetY)
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
-        (id, MaxCharCount, maxCharCount)
-        (id, LineCount, lineCount)
-        (id, Tree, tree)
-        (id, Parser, parser)
         (id, CroppedText, croppedText)
         (id, VimVisualRange, visualRange)
+        (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
     rule deleteBuffer(Fact):
       what:
@@ -191,6 +184,7 @@ let rules* =
         (id, Parser, parser)
         (id, CroppedText, croppedText)
         (id, VimVisualRange, visualRange)
+        (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
       then:
         session.retract(id, BufferId, bufferId)
@@ -211,6 +205,7 @@ let rules* =
         tree_sitter.deleteParser(parser)
         session.retract(id, CroppedText, croppedText)
         session.retract(id, VimVisualRange, visualRange)
+        session.retract(id, VimVisualBlockMode, visualBlockMode)
         session.retract(id, VimSearchRanges, searchRanges)
     rule updateBuffer(Fact):
       what:
