@@ -227,10 +227,10 @@ let rules* =
         (Global, FontSize, fontSize)
       then:
         let
-          textWidth = text.monoFontWidth * fontSize
-          textHeight = text.monoFont.height * fontSize
-        libvim.vimWindowSetWidth(int32(windowWidth.float / textWidth))
-        libvim.vimWindowSetHeight(int32(windowHeight.float / textHeight))
+          fontWidth = text.monoFontWidth * fontSize
+          fontHeight = text.monoFont.height * fontSize
+        libvim.vimWindowSetWidth(int32(windowWidth.float / fontWidth))
+        libvim.vimWindowSetHeight(int32(windowHeight.float / fontHeight))
     rule updateLineCount(Fact):
       what:
         (id, Lines, lines)
@@ -265,12 +265,12 @@ let rules* =
         (id, LineCount, lineCount)
       then:
         let
-          textHeight = text.monoFont.height * fontSize
-          cursorTop = cursorLine.float * textHeight
-          cursorBottom = cursorTop + textHeight
-          textViewHeight = windowHeight.float - textHeight
+          fontHeight = text.monoFont.height * fontSize
+          cursorTop = cursorLine.float * fontHeight
+          cursorBottom = cursorTop + fontHeight
+          textViewHeight = windowHeight.float - fontHeight
           scrollBottom = scrollY + textViewHeight
-          documentBottom = lineCount.float * textHeight
+          documentBottom = lineCount.float * fontHeight
         if cursorTop < scrollY:
           session.insert(id, ScrollTargetY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
@@ -414,10 +414,8 @@ proc tick*(game: RootGame, clear: bool): bool =
     (fontSize) = session.query(rules.getFont)
     vim = session.query(rules.getVim)
     currentBufferIndex = session.find(rules.getCurrentBuffer)
-    fontWidth = text.monoFontWidth
-    fontHeight = text.monoFont.height
-    textWidth = fontWidth * fontSize
-    textHeight = fontHeight * fontSize
+    fontWidth = text.monoFontWidth * fontSize
+    fontHeight = text.monoFont.height * fontSize
 
   if clear:
     glClearColor(bgColor.arr[0], bgColor.arr[1], bgColor.arr[2], bgColor.arr[3])
@@ -455,8 +453,8 @@ proc tick*(game: RootGame, clear: bool): bool =
         var e2 = uncompiledRectEntity
         e2.project(float(windowWidth), float(windowHeight))
         e2.invert(camera)
-        e2.translate(currentBuffer.cursorColumn.GLfloat * textWidth, currentBuffer.cursorLine.GLfloat * textHeight)
-        e2.scale(if vim.mode == libvim.Insert.ord: textWidth / 4 else: textWidth, textHeight)
+        e2.translate(currentBuffer.cursorColumn.GLfloat * fontWidth, currentBuffer.cursorLine.GLfloat * fontHeight)
+        e2.scale(if vim.mode == libvim.Insert.ord: fontWidth / 4 else: fontWidth, fontHeight)
         e2.color(cursorColor)
         e.add(e2)
       # selection
@@ -471,7 +469,7 @@ proc tick*(game: RootGame, clear: bool): bool =
           var e2 = uncompiledRectEntity
           e2.project(float(windowWidth), float(windowHeight))
           e2.invert(camera)
-          e2.scale(textWidth, textHeight)
+          e2.scale(fontWidth, fontHeight)
           e2.translate(left, top)
           e2.scale(width, height)
           e2.color(selectColor)
@@ -484,7 +482,7 @@ proc tick*(game: RootGame, clear: bool): bool =
             var e2 = uncompiledRectEntity
             e2.project(float(windowWidth), float(windowHeight))
             e2.invert(camera)
-            e2.scale(textWidth, textHeight)
+            e2.scale(fontWidth, fontHeight)
             e2.translate(left, top)
             e2.scale(width, height)
             e2.color(searchColor)
@@ -504,8 +502,8 @@ proc tick*(game: RootGame, clear: bool): bool =
   block:
     var e = rectEntity
     e.project(float(windowWidth), float(windowHeight))
-    e.translate(0f, float(windowHeight) - textHeight)
-    e.scale(float(windowWidth), textHeight)
+    e.translate(0f, float(windowHeight) - fontHeight)
+    e.scale(float(windowWidth), fontHeight)
     e.color(
       if vim.mode == libvim.CommandLine.ord:
         tanColor
@@ -520,8 +518,8 @@ proc tick*(game: RootGame, clear: bool): bool =
     block:
       var e = rectEntity
       e.project(float(windowWidth), float(windowHeight))
-      e.translate((vim.commandPosition.float + 1) * textWidth, float(windowHeight) - textHeight)
-      e.scale(textWidth / 4, textHeight)
+      e.translate((vim.commandPosition.float + 1) * fontWidth, float(windowHeight) - fontHeight)
+      e.scale(fontWidth / 4, fontHeight)
       e.color(cursorColor)
       render(game, e)
     # command line text
@@ -537,7 +535,7 @@ proc tick*(game: RootGame, clear: bool): bool =
         if compLen > commLen:
           discard text.add(e, baseMonoEntity, text.monoFont, completionColor, vim.commandCompletion[commLen ..< compLen], [], endPos)
       e.project(float(windowWidth), float(windowHeight))
-      e.translate(0f, float(windowHeight) - textHeight)
+      e.translate(0f, float(windowHeight) - fontHeight)
       e.scale(fontSize, fontSize)
       render(game, e)
   elif vim.message != "":
@@ -546,6 +544,6 @@ proc tick*(game: RootGame, clear: bool): bool =
     e.uniforms.u_start_line.disable = false
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, vim.message, [])
     e.project(float(windowWidth), float(windowHeight))
-    e.translate(0f, float(windowHeight) - textHeight)
+    e.translate(0f, float(windowHeight) - fontHeight)
     e.scale(fontSize, fontSize)
     render(game, e)
