@@ -16,6 +16,7 @@ import tables
 from strutils import nil
 import times
 from tree_sitter import nil
+from scroll import nil
 
 const
   fontSizeStep = 1/16
@@ -31,6 +32,7 @@ type
   Id* = enum
     Global
   Attr* = enum
+    DeltaTime,
     WindowTitle, WindowTitleCallback,
     InitComplete,
     WindowWidth, WindowHeight,
@@ -43,13 +45,17 @@ type
     VimMessage,
     AsciiArt, DeleteBuffer,
     BufferId, Lines, Path,
-    CursorLine, CursorColumn, ScrollX, ScrollY,
+    CursorLine, CursorColumn,
+    ScrollX, ScrollY,
+    ScrollTargetX, ScrollTargetY,
+    ScrollSpeedX, ScrollSpeedY,
     LineCount, Tree, Parser, CroppedText
   Strings = seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
 
 schema Fact(Id, Attr):
+  DeltaTime: float
   WindowTitle: string
   WindowTitleCallback: WindowTitleCallbackType
   InitComplete: bool
@@ -80,6 +86,10 @@ schema Fact(Id, Attr):
   CursorColumn: int
   ScrollX: float
   ScrollY: float
+  ScrollTargetX: float
+  ScrollTargetY: float
+  ScrollSpeedX: float
+  ScrollSpeedY: float
   LineCount: int
   Tree: pointer
   Parser: pointer
@@ -128,6 +138,10 @@ let rules* =
         (id, CursorColumn, cursorColumn)
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
+        (id, ScrollTargetX, scrollTargetX)
+        (id, ScrollTargetY, scrollTargetY)
+        (id, ScrollSpeedX, scrollSpeedX)
+        (id, ScrollSpeedY, scrollSpeedY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
@@ -143,6 +157,10 @@ let rules* =
         (id, CursorColumn, cursorColumn)
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
+        (id, ScrollTargetX, scrollTargetX)
+        (id, ScrollTargetY, scrollTargetY)
+        (id, ScrollSpeedX, scrollSpeedX)
+        (id, ScrollSpeedY, scrollSpeedY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
@@ -158,6 +176,10 @@ let rules* =
         (id, CursorColumn, cursorColumn)
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
+        (id, ScrollTargetX, scrollTargetX)
+        (id, ScrollTargetY, scrollTargetY)
+        (id, ScrollSpeedX, scrollSpeedX)
+        (id, ScrollSpeedY, scrollSpeedY)
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
@@ -171,6 +193,10 @@ let rules* =
         session.retract(id, CursorColumn, cursorColumn)
         session.retract(id, ScrollX, scrollX)
         session.retract(id, ScrollY, scrollY)
+        session.retract(id, ScrollTargetX, scrollTargetX)
+        session.retract(id, ScrollTargetY, scrollTargetY)
+        session.retract(id, ScrollSpeedX, scrollSpeedX)
+        session.retract(id, ScrollSpeedY, scrollSpeedY)
         session.retract(id, LineCount, lineCount)
         session.retract(id, Tree, tree)
         tree_sitter.deleteTree(tree)
@@ -266,7 +292,7 @@ let rules* =
           fontHeight = text.monoFont.height
           textHeight = fontHeight * fontSize
           lineCount = lines.len
-          linesToSkip = min(int(scrollY / textHeight), lineCount)
+          linesToSkip = min(int(scrollY / textHeight), lineCount).max(0)
           linesToCrop = min(linesToSkip + int(windowHeight.float / textHeight) + 1, lineCount)
           parsed = tree_sitter.parse(tree)
         for i in linesToSkip ..< linesToCrop:
@@ -274,6 +300,29 @@ let rules* =
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
         session.insert(id, CroppedText, e)
+    rule moveCameraToTarget(Fact):
+      what:
+        (Global, DeltaTime, deltaTime)
+        (id, ScrollX, scrollX, then = false)
+        (id, ScrollY, scrollY, then = false)
+        (id, ScrollTargetX, scrollTargetX, then = false)
+        (id, ScrollTargetY, scrollTargetY, then = false)
+        (id, ScrollSpeedX, scrollSpeedX, then = false)
+        (id, ScrollSpeedY, scrollSpeedY, then = false)
+      cond:
+        scrollX != scrollTargetX or scrollY != scrollTargetY
+      then:
+        let
+          scrollData = (
+            scrollX, scrollY,
+            scrollTargetX, scrollTargetY,
+            scrollSpeedX, scrollSpeedY
+          )
+          ret = scroll.animateCamera(scrollData, deltaTime)
+        session.insert(id, ScrollX, ret.x)
+        session.insert(id, ScrollY, ret.y)
+        session.insert(id, ScrollSpeedX, ret.speedX)
+        session.insert(id, ScrollSpeedY, ret.speedY)
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
@@ -297,6 +346,23 @@ proc onWindowResize*(width: int, height: int) =
     return
   session.insert(Global, WindowWidth, width)
   session.insert(Global, WindowHeight, height)
+
+proc onScroll*(xoffset: float64, yoffset: float64) =
+  let index = session.find(rules.getCurrentBuffer)
+  if index == -1:
+    return
+  let
+    buffer = session.get(rules.getCurrentBuffer, index)
+    scrollData = (
+      buffer.scrollX, buffer.scrollY,
+      buffer.scrollTargetX, buffer.scrollTargetY,
+      buffer.scrollSpeedX, buffer.scrollSpeedY
+    )
+    ret = scroll.startScrollingCamera(scrollData, xoffset, yoffset)
+  session.insert(buffer.id, ScrollTargetX, ret.targetX)
+  session.insert(buffer.id, ScrollTargetY, ret.targetY)
+  session.insert(buffer.id, ScrollSpeedX, ret.speedX)
+  session.insert(buffer.id, ScrollSpeedY, ret.speedY)
 
 proc fontDec*() =
   let

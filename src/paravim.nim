@@ -68,7 +68,16 @@ proc cursorPosCallback*(window: GLFWWindow, xpos: float64, ypos: float64) {.cdec
 proc frameSizeCallback*(window: GLFWWindow, width: int32, height: int32) {.cdecl.} =
   core.onWindowResize(width, height)
 
-var window: GLFWWindow # this is necessary because cdecl functions can't capture local variables
+var density: float
+
+proc scrollCallback*(window: GLFWWindow, xoffset: float64, yoffset: float64) {.cdecl.} =
+  if density == 0:
+    return # we can't scroll until we know the screen density
+  core.onScroll(xoffset / density, yoffset / density)
+
+var
+  window: GLFWWindow # this is necessary because cdecl functions can't capture local variables
+  totalTime: float
 
 proc init*(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
   window = w
@@ -90,17 +99,25 @@ proc init*(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
 
   var windowWidth, windowHeight: int32
   w.getWindowSize(windowWidth.addr, windowHeight.addr)
-  let density = max(1, int(width / windowWidth))
+  density = max(1, int(width / windowWidth)).float
 
-  core.init(game, params.len == 0, float(density))
-
+  core.init(game, params.len == 0, density)
   core.insert(core.session, core.Global, core.WindowTitleCallback, proc (title: string) = w.setWindowTitle(title))
+  totalTime = glfwGetTime()
 
 proc init*(game: var gl.RootGame, w: GLFWWindow) =
   init(game, w, @[])
 
+proc tick*(game: gl.RootGame, clear: bool) =
+  let
+    ts = glfwGetTime()
+    deltaTime = ts - totalTime
+  totalTime = ts
+  core.insert(core.session, core.Global, core.DeltaTime, deltaTime)
+  core.tick(game, clear)
+
 proc tick*(game: gl.RootGame) =
-  core.tick(game, false)
+  tick(game, false)
 
 proc isNormalMode*(): bool =
   libvim.vimGetMode() in {libvim.Normal.ord, libvim.NormalBusy.ord}
