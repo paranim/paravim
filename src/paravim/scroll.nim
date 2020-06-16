@@ -1,20 +1,20 @@
 import pararules
 
+type
+  Scroll = tuple[x: float, y: float, targetX: float, targetY: float, speedX: float, speedY: float]
+
 const
   scrollSpeed = 40.0
   scrollLimit = 10.0
   minScrollSpeed = 5.0
   deceleration = 0.8
 
-proc decelerate(speed: float): float =
+func decelerate(speed: float): float =
   let speed = speed * deceleration
   if abs(speed) < minScrollSpeed:
     minScrollSpeed
   else:
     speed
-
-type
-  Scroll = tuple[x: float, y: float, targetX: float, targetY: float, speedX: float, speedY: float]
 
 func startScrollingCamera*(scroll: Scroll, xoffset: float, yoffset: float): Scroll =
   let
@@ -56,12 +56,12 @@ func animateCamera*(scroll: Scroll, deltaTime: float): Scroll =
       else:
         scroll.y + (ydiff * min(1.0, deltaTime * scroll.speedY))
     newSpeedX =
-      if newX == scroll.speedX:
+      if newX == scroll.targetX:
         0.0
       else:
         decelerate(scroll.speedX)
     newSpeedY =
-      if newY == scroll.speedY:
+      if newY == scroll.targetY:
         0.0
       else:
         decelerate(scroll.speedY)

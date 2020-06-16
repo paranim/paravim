@@ -11,7 +11,9 @@ const
   instancedTextVertexShader = staticRead("shaders/vertex.glsl")
   instancedTextFragmentShader = staticRead("shaders/fragment.glsl")
 
-let monoFont* = initFont(ttf = monoFontRaw, fontHeight = 128, firstChar = 32, bitmapWidth = 1024, bitmapHeight = 1024, charCount = 2048)
+let
+  monoFont* = initFont(ttf = monoFontRaw, fontHeight = 128, firstChar = 32, bitmapWidth = 1024, bitmapHeight = 1024, charCount = 2048)
+  monoFontWidth* = monoFont.chars[0].xadvance
 
 type
   ParavimTextEntityUniforms = tuple[

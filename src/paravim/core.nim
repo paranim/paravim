@@ -227,7 +227,7 @@ let rules* =
         (Global, FontSize, fontSize)
       then:
         let
-          textWidth = text.monoFont.chars[0].xadvance * fontSize
+          textWidth = text.monoFontWidth * fontSize
           textHeight = text.monoFont.height * fontSize
         libvim.vimWindowSetWidth(int32(windowWidth.float / textWidth))
         libvim.vimWindowSetHeight(int32(windowHeight.float / textHeight))
@@ -247,7 +247,7 @@ let rules* =
         (id, ScrollX, scrollX, then = false)
       then:
         let
-          textWidth = text.monoFont.chars[0].xadvance * fontSize
+          textWidth = text.monoFontWidth * fontSize
           cursorLeft = cursorColumn.float * textWidth
           cursorRight = cursorLeft + textWidth
           textViewWidth = windowWidth.float
@@ -414,7 +414,7 @@ proc tick*(game: RootGame, clear: bool): bool =
     (fontSize) = session.query(rules.getFont)
     vim = session.query(rules.getVim)
     currentBufferIndex = session.find(rules.getCurrentBuffer)
-    fontWidth = text.monoFont.chars[0].xadvance
+    fontWidth = text.monoFontWidth
     fontHeight = text.monoFont.height
     textWidth = fontWidth * fontSize
     textHeight = fontHeight * fontSize
