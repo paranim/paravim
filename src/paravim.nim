@@ -56,7 +56,7 @@ proc keyCallback*(window: GLFWWindow, key: int32, scancode: int32,
       vim.onInput("<" & glfwToVimSpecials[key] & ">")
 
 proc charCallback*(window: GLFWWindow, codepoint: uint32) {.cdecl.} =
-  vim.onInput("" & char(codepoint))
+  vim.onInput($ char(codepoint))
 
 proc mouseButtonCallback*(window: GLFWWindow, button: int32, action: int32, mods: int32) {.cdecl.} =
   if action == GLFWPress:

@@ -53,7 +53,7 @@ type
     ScrollSpeedX, ScrollSpeedY,
     MaxCharCount, LineCount,
     Tree, Parser, CroppedText
-  Strings = seq[string]
+  RefStrings = seq[ref string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
 
@@ -82,7 +82,7 @@ schema Fact(Id, Attr):
   AsciiArt: string
   DeleteBuffer: int
   BufferId: int
-  Lines: Strings
+  Lines: RefStrings
   Path: string
   CursorLine: int
   CursorColumn: int
@@ -246,7 +246,7 @@ let rules* =
           session.insert(id, LineCount, lines.len)
         var maxCharCount = 0
         for line in lines:
-          let count = line.len
+          let count = line[].len
           if count > maxCharcount:
             maxCharCount = count
         session.insert(id, MaxCharCount, maxCharCount)
@@ -304,7 +304,7 @@ let rules* =
           linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, lineCount)
           parsed = tree_sitter.parse(tree)
         for i in linesToSkip ..< linesToCrop:
-          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i], if parsed.hasKey(i): parsed[i] else: @[])
+          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i][], if parsed.hasKey(i): parsed[i] else: @[])
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
         session.insert(id, CroppedText, e)

@@ -143,12 +143,13 @@ proc onBufEnter(buf: buf_T) =
     for i in 0 ..< count:
       let line = vimBufferGetLine(buf, linenr_T(i+1))
       lines.add($ line)
+    let refLines = buffers.newStringRefs(lines)
     # get or create session id
     var sessionId: int
     if index >= 0:
       let existingBuffer = pararules.get(session, rules.getBuffer, index)
       # if the content hasn't changed, no need to update the buffer
-      if existingBuffer.lines == lines:
+      if buffers.compareStringRefs(existingBuffer.lines, refLines):
         return
       else:
         sessionId = existingBuffer.id
@@ -160,7 +161,7 @@ proc onBufEnter(buf: buf_T) =
     # insert buffer
     session.insert(sessionId, BufferId, bufferId)
     session.insert(sessionId, Path, pathStr)
-    session.insert(sessionId, Lines, lines)
+    session.insert(sessionId, Lines, refLines)
     session.insert(sessionId, CursorLine, vimCursorGetLine() - 1)
     session.insert(sessionId, CursorColumn, vimCursorGetColumn())
     session.insert(sessionId, ScrollX, 0f)
@@ -199,7 +200,9 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   for i in firstLine ..< lastLine:
     let line = vimBufferGetLine(bufferUpdate.buf, linenr_T(i+1))
     lines.add($ line)
-  let id = vimBufferGetId(bufferUpdate.buf)
+  let
+    id = vimBufferGetId(bufferUpdate.buf)
+    refLines = buffers.newStringRefs(lines)
   session.insert(Global, BufferUpdate, (id.int, lines, firstLine.int, bufferUpdate.xtra.int))
 
 proc onStopSearch() {.cdecl.} =
