@@ -12,6 +12,7 @@ import sets
 from math import `mod`
 from glm import nil
 from libvim import nil
+from structs import nil
 import tables
 from strutils import nil
 import times
@@ -37,7 +38,7 @@ type
     WindowTitle, WindowTitleCallback,
     InitComplete,
     WindowWidth, WindowHeight,
-    MouseClick, MouseX, MouseY,
+    MouseX, MouseY,
     FontSize, CurrentBufferId, BufferUpdate,
     VimMode, VimCommandText, VimCommandStart,
     VimCommandPosition, VimCommandCompletion,
@@ -63,7 +64,6 @@ schema Fact(Id, Attr):
   InitComplete: bool
   WindowWidth: int
   WindowHeight: int
-  MouseClick: int
   MouseX: float
   MouseY: float
   FontSize: float
@@ -120,6 +120,10 @@ let rules* =
         (Global, WindowWidth, windowWidth)
         (Global, WindowHeight, windowHeight)
         (Global, AsciiArt, ascii)
+    rule getMouse(Fact):
+      what:
+        (Global, MouseX, x)
+        (Global, MouseY, y)
     rule getFont(Fact):
       what:
         (Global, FontSize, fontSize)
@@ -368,8 +372,32 @@ proc getCurrentSessionId*(): int =
 for r in rules.fields:
   session.add(r)
 
+func mouseToCursorPosition(
+      mouseX: float, mouseY: float, scrollX: float, scrollY: float, fontWidth: float, fontHeight: float
+    ): tuple[line: int, column: int] =
+  let
+    column = (mouseX + scrollX) / fontWidth
+    line = (mouseY + scrollY) / fontHeight
+  (column.int, line.int)
+
 proc onMouseClick*(button: int) =
-  session.insert(Global, MouseClick, button)
+  if button == 0: # left
+    let
+      mouse = session.query(rules.getMouse)
+      index = session.find(rules.getCurrentBuffer)
+    if index >= 0:
+      let
+        buffer = session.get(rules.getCurrentBuffer, index)
+        (fontSize) = session.query(rules.getFont)
+        fontWidth = text.monoFontWidth * fontSize
+        fontHeight = text.monoFont.height * fontSize
+        (column, line) = mouseToCursorPosition(mouse.x, mouse.y, buffer.scrollX, buffer.scrollY, fontWidth, fontHeight)
+      var pos: structs.pos_T
+      pos.lnum = line.int32
+      pos.col = column.int32
+      libvim.vimCursorSetPosition(pos)
+      session.insert(buffer.id, CursorLine, line)
+      session.insert(buffer.id, CursorColumn, column)
 
 proc onMouseMove*(xpos: float, ypos: float) =
   session.insert(Global, MouseX, xpos)
@@ -441,6 +469,8 @@ proc init*(game: var RootGame, showAscii: bool, density: float) =
     else:
       ""
   session.insert(Global, AsciiArt, ascii)
+  session.insert(Global, MouseX, 0f)
+  session.insert(Global, MouseY, 0f)
 
 proc tick*(game: RootGame, clear: bool): bool =
   result = false # if true, the game loop must continue immediately because we're animating

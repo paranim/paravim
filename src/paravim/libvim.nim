@@ -100,7 +100,7 @@ proc vimCommandLineGetCompletions*(completions: ptr cstringArray; count: ptr cin
 proc vimCursorGetColumn*(): colnr_T {.cdecl, dynlib: getLib(), importc: "vimCursorGetColumn".}
 proc vimCursorGetLine*(): linenr_T {.cdecl, dynlib: getLib(), importc: "vimCursorGetLine".}
 #proc vimCursorGetPosition*(): pos_T
-#proc vimCursorSetPosition*(pos: pos_T)
+proc vimCursorSetPosition*(pos: pos_T) {.cdecl, dynlib: getLib(), importc: "vimCursorSetPosition".}
 ## **
 ##  vimCursorGetDesiredColumn
 ##
