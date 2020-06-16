@@ -408,7 +408,9 @@ proc init*(game: var RootGame, showAscii: bool, density: float) =
       ""
   session.insert(Global, AsciiArt, ascii)
 
-proc tick*(game: RootGame, clear: bool) =
+proc tick*(game: RootGame, clear: bool): bool =
+  result = false # if true, the game loop must continue immediately because we're animating
+
   let
     (windowWidth, windowHeight, ascii) = session.query(rules.getWindow)
     (fontSize) = session.query(rules.getFont)
@@ -443,6 +445,9 @@ proc tick*(game: RootGame, clear: bool) =
     render(game, e)
   elif currentBufferIndex >= 0:
     let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
+    result =
+      currentBuffer.scrollX != currentBuffer.scrollTargetX or
+      currentBuffer.scrollY != currentBuffer.scrollTargetY
     var camera = glm.mat3f(1)
     camera.translate(currentBuffer.scrollX, currentBuffer.scrollY)
     block:

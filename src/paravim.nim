@@ -108,7 +108,7 @@ proc init*(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
 proc init*(game: var gl.RootGame, w: GLFWWindow) =
   init(game, w, @[])
 
-proc tick*(game: gl.RootGame, clear: bool) =
+proc tick*(game: gl.RootGame, clear: bool): bool =
   let
     ts = glfwGetTime()
     deltaTime = ts - totalTime
@@ -116,7 +116,7 @@ proc tick*(game: gl.RootGame, clear: bool) =
   core.insert(core.session, core.Global, core.DeltaTime, deltaTime)
   core.tick(game, clear)
 
-proc tick*(game: gl.RootGame) =
+proc tick*(game: gl.RootGame): bool =
   tick(game, false)
 
 proc isNormalMode*(): bool =
