@@ -222,10 +222,16 @@ let rules* =
         bufferId == bu.bufferId
       then:
         session.retract(Global, BufferUpdate, bu)
-        let newLines = buffers.updateLines(lines, bu)
-        let newTree = tree_sitter.editTree(tree, parser, bu, lines, newLines)
-        session.insert(id, Tree, newTree)
+        var newLines = buffers.updateLines(lines, bu)
+        # if the lines are empty, insert a single blank line
+        # vim seems to always want there to be at least one line
+        # see test: delete all lines
+        if newLines.len == 0:
+          newLines = buffers.newStringRefs(@[""])
         session.insert(id, Lines, newLines)
+        # re-parse if necessary
+        let newTree = tree_sitter.editTree(tree, parser, newLines)
+        session.insert(id, Tree, newTree)
     rule resizeWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)

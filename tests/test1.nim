@@ -18,8 +18,7 @@ test "set the tab size":
 test "read a line":
   let buf = vimBufferOpen("tests/hello.txt", 1, 0)
   check vimBufferGetLine(buf, 1) == "Hello, world!"
-  vim.onInput("b")
-  vim.onInput("d")
+  vimExecute("bd!")
 
 test "delete all lines":
   let buf = vimBufferOpen("tests/hello.txt", 1, 0)
@@ -29,8 +28,9 @@ test "delete all lines":
   vim.onInput("d")
   vim.onInput("G")
   check vimBufferGetLine(buf, 1) == ""
+  vim.onInput("p")
+  check vimBufferGetLine(buf, 1) == "" # first line is blank
+  check vimBufferGetLine(buf, 2) == "Hello, world!"
+  echo "undoing"
   vim.onInput("u")
-  vim.onInput("u") # why do i have to do this twice?
-  check vimBufferGetLine(buf, 1) == "Hello, world!"
-  vim.onInput("b")
-  vim.onInput("d")
+  vimExecute("bd!")

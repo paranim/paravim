@@ -45,8 +45,7 @@ proc updateLines*(lines: seq[ref string], bu: BufferUpdateTuple): seq[ref string
     result = @[]
     result.add(lines[0 ..< bu.firstLine])
     result.add(bu.lines.newStringRefs)
-    if lines.len > 0: # see test: "delete all lines"
-      result.add(lines[bu.firstLine + linesToRemove ..< lines.len])
+    result.add(lines[bu.firstLine + linesToRemove ..< lines.len])
 
 proc normalizeRange*(rangeData: RangeTuple, forceLeftToRight: bool): RangeTuple =
   var (startLine, startCol, endLine, endCol) = rangeData
