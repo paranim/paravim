@@ -139,17 +139,17 @@ proc onBufEnter(buf: buf_T) =
   if path != nil:
     let pathStr = $ path
     # get lines
-    var lines: seq[string]
+    var lines: ref seq[string]
+    new(lines)
     for i in 0 ..< count:
       let line = vimBufferGetLine(buf, linenr_T(i+1))
-      lines.add($ line)
-    let refLines = buffers.newStringRefs(lines)
+      lines[].add($ line)
     # get or create session id
     var sessionId: int
     if index >= 0:
       let existingBuffer = pararules.get(session, rules.getBuffer, index)
       # if the content hasn't changed, no need to update the buffer
-      if buffers.compareStringRefs(existingBuffer.lines, refLines):
+      if existingBuffer.lines[] == lines[]:
         return
       else:
         sessionId = existingBuffer.id
@@ -161,7 +161,7 @@ proc onBufEnter(buf: buf_T) =
     # insert buffer
     session.insert(sessionId, BufferId, bufferId)
     session.insert(sessionId, Path, pathStr)
-    session.insert(sessionId, Lines, refLines)
+    session.insert(sessionId, Lines, lines)
     session.insert(sessionId, CursorLine, vimCursorGetLine() - 1)
     session.insert(sessionId, CursorColumn, vimCursorGetColumn())
     session.insert(sessionId, ScrollX, 0f)
@@ -171,7 +171,7 @@ proc onBufEnter(buf: buf_T) =
     session.insert(sessionId, ScrollSpeedX, 0f)
     session.insert(sessionId, ScrollSpeedY, 0f)
     session.insert(sessionId, LineCount, count)
-    let (tree, parser) = tree_sitter.init(pathStr, lines)
+    let (tree, parser) = tree_sitter.init(pathStr, lines[])
     session.insert(sessionId, Tree, tree)
     session.insert(sessionId, Parser, parser)
     session.insert(sessionId, VimVisualRange, (0, 0, 0, 0))
@@ -200,9 +200,7 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   for i in firstLine ..< lastLine:
     let line = vimBufferGetLine(bufferUpdate.buf, linenr_T(i+1))
     lines.add($ line)
-  let
-    id = vimBufferGetId(bufferUpdate.buf)
-    refLines = buffers.newStringRefs(lines)
+  let id = vimBufferGetId(bufferUpdate.buf)
   session.insert(Global, BufferUpdate, (id.int, lines, firstLine.int, bufferUpdate.xtra.int))
 
 proc onStopSearch() {.cdecl.} =

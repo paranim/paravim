@@ -89,9 +89,9 @@ proc parse*(tree: pointer): Table[int, seq[Node]] =
     let node = ts_tree_root_node(tree)
     parse(node, result)
 
-proc editTree*(tree: pointer, parser: pointer, newLines: seq[ref string]): pointer =
+proc editTree*(tree: pointer, parser: pointer, newLines: ref seq[string]): pointer =
   if parser != nil:
-    let content = strutils.join(buffers.derefStringRefs(newLines), "\n")
+    let content = strutils.join(newLines[], "\n")
     result = ts_parser_parse_string(parser, nil, content, content.len.uint32)
   if tree != nil:
     ts_tree_delete(tree)

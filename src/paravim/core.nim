@@ -53,7 +53,7 @@ type
     ScrollSpeedX, ScrollSpeedY,
     MaxCharCount, LineCount,
     Tree, Parser, CroppedText
-  RefStrings = seq[ref string]
+  RefStrings = ref seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
 
@@ -226,8 +226,8 @@ let rules* =
         # if the lines are empty, insert a single blank line
         # vim seems to always want there to be at least one line
         # see test: delete all lines
-        if newLines.len == 0:
-          newLines = buffers.newStringRefs(@[""])
+        if newLines[].len == 0:
+          newLines[] = @[""]
         session.insert(id, Lines, newLines)
         # re-parse if necessary
         let newTree = tree_sitter.editTree(tree, parser, newLines)
@@ -248,11 +248,11 @@ let rules* =
         (id, Lines, lines)
         (id, LineCount, lineCount, then = false)
       then:
-        if lines.len != lineCount:
-          session.insert(id, LineCount, lines.len)
+        if lines[].len != lineCount:
+          session.insert(id, LineCount, lines[].len)
         var maxCharCount = 0
-        for line in lines:
-          let count = line[].len
+        for line in lines[]:
+          let count = line.len
           if count > maxCharcount:
             maxCharCount = count
         session.insert(id, MaxCharCount, maxCharCount)
@@ -305,12 +305,12 @@ let rules* =
         var e = deepCopy(monoEntity)
         let
           fontHeight = text.monoFont.height * fontSize
-          lineCount = lines.len
+          lineCount = lines[].len
           linesToSkip = min(int(scrollY / fontHeight), lineCount).max(0)
           linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, lineCount)
           parsed = tree_sitter.parse(tree)
         for i in linesToSkip ..< linesToCrop:
-          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[i][], if parsed.hasKey(i): parsed[i] else: @[])
+          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], if parsed.hasKey(i): parsed[i] else: @[])
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
         session.insert(id, CroppedText, e)
