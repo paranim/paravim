@@ -103,8 +103,6 @@ proc init*(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
   w.getWindowSize(windowWidth.addr, windowHeight.addr)
   density = max(1, int(width / windowWidth)).float
 
-  w.setCursor(glfwCreateStandardCursor(GLFW_IBEAM_CURSOR))
-
   core.init(game, params.len == 0, density)
   core.insert(core.session, core.Global, core.WindowTitleCallback, proc (title: string) = w.setWindowTitle(title))
   totalTime = glfwGetTime()
