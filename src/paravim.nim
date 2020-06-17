@@ -62,13 +62,15 @@ proc mouseButtonCallback*(window: GLFWWindow, button: int32, action: int32, mods
   if action == GLFWPress:
     core.onMouseClick(button)
 
+var density: float
+
 proc cursorPosCallback*(window: GLFWWindow, xpos: float64, ypos: float64) {.cdecl.} =
-  core.onMouseMove(xpos, ypos)
+  if density == 0:
+    return # we can't move the mouse until we know the screen density
+  core.onMouseMove(xpos * density, ypos * density)
 
 proc frameSizeCallback*(window: GLFWWindow, width: int32, height: int32) {.cdecl.} =
   core.onWindowResize(width, height)
-
-var density: float
 
 proc scrollCallback*(window: GLFWWindow, xoffset: float64, yoffset: float64) {.cdecl.} =
   if density == 0:
