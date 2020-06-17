@@ -393,7 +393,7 @@ proc onMouseClick*(button: int) =
         fontHeight = text.monoFont.height * fontSize
         (column, line) = mouseToCursorPosition(mouse.x, mouse.y, buffer.scrollX, buffer.scrollY, fontWidth, fontHeight)
       var pos: structs.pos_T
-      pos.lnum = line.int32
+      pos.lnum = line.int32 + 1 # lines in libvim are 1-based
       pos.col = column.int32
       libvim.vimCursorSetPosition(pos)
       session.insert(buffer.id, CursorLine, line)
