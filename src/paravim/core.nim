@@ -6,7 +6,7 @@ from paranim/math as pmath import translate
 import pararules
 from text import ParavimTextEntity
 from paratext/gl/text as ptext import nil
-from buffers import BufferUpdateTuple, RangeTuple
+from buffers import RangeTuple
 import colors
 import sets
 from math import `mod`
@@ -39,7 +39,7 @@ type
     InitComplete,
     WindowWidth, WindowHeight,
     MouseX, MouseY,
-    FontSize, CurrentBufferId, BufferUpdate,
+    FontSize, CurrentBufferId,
     VimMode, VimCommandText, VimCommandStart,
     VimCommandPosition, VimCommandCompletion,
     VimVisualRange, VimVisualBlockMode,
@@ -68,7 +68,6 @@ schema Fact(Id, Attr):
   MouseY: float
   FontSize: float
   CurrentBufferId: int
-  BufferUpdate: BufferUpdateTuple
   VimMode: int
   VimCommandText: string
   VimCommandStart: char
@@ -169,6 +168,8 @@ let rules* =
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
+        (id, Tree, tree)
+        (id, Parser, parser)
     rule deleteBuffer(Fact):
       what:
         (Global, DeleteBuffer, bufferId)
@@ -211,27 +212,6 @@ let rules* =
         session.retract(id, VimVisualRange, visualRange)
         session.retract(id, VimVisualBlockMode, visualBlockMode)
         session.retract(id, VimSearchRanges, searchRanges)
-    rule updateBuffer(Fact):
-      what:
-        (Global, BufferUpdate, bu)
-        (id, Lines, lines)
-        (id, BufferId, bufferId)
-        (id, Tree, tree)
-        (id, Parser, parser)
-      cond:
-        bufferId == bu.bufferId
-      then:
-        session.retract(Global, BufferUpdate, bu)
-        var newLines = buffers.updateLines(lines, bu)
-        # if the lines are empty, insert a single blank line
-        # vim seems to always want there to be at least one line
-        # see test: delete all lines
-        if newLines[].len == 0:
-          newLines[] = @[""]
-        session.insert(id, Lines, newLines)
-        # re-parse if necessary
-        let newTree = tree_sitter.editTree(tree, parser, newLines)
-        session.insert(id, Tree, newTree)
     rule resizeWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)

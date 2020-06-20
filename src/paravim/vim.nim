@@ -200,8 +200,22 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   for i in firstLine ..< lastLine:
     let line = vimBufferGetLine(bufferUpdate.buf, linenr_T(i+1))
     lines.add($ line)
-  let id = vimBufferGetId(bufferUpdate.buf)
-  session.insert(Global, BufferUpdate, (id.int, lines, firstLine.int, bufferUpdate.xtra.int))
+  let id = vimBufferGetId(bufferUpdate.buf).int
+  # get current buffer
+  let index = pararules.find(session, rules.getBuffer, bufferId = id)
+  let buffer = pararules.get(session, rules.getBuffer, index) # will throw if buffer isn't in session
+  # update the lines
+  let bu = (lines, firstLine.int, bufferUpdate.xtra.int)
+  var newLines = buffers.updateLines(buffer.lines, bu)
+  # if the lines are empty, insert a single blank line
+  # vim seems to always want there to be at least one line
+  # see test: delete all lines
+  if newLines[].len == 0:
+    newLines[] = @[""]
+  session.insert(id, Lines, newLines)
+  # re-parse if necessary
+  let newTree = tree_sitter.editTree(buffer.tree, buffer.parser, newLines)
+  session.insert(id, Tree, newTree)
 
 proc onStopSearch() {.cdecl.} =
   session.insert(Global, VimShowSearch, false)
