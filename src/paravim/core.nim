@@ -281,20 +281,6 @@ let rules* =
           session.insert(id, ScrollTargetY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
           session.insert(id, ScrollTargetY, cursorBottom - textViewHeight)
-    rule updateText(Fact):
-      what:
-        (id, Text, oldText, then = false)
-        (id, Lines, lines, then = false)
-        (id, ParsedNodes, parsed)
-      then:
-        var e = deepCopy(monoEntity)
-        for i in 0 ..< lines[].len:
-          let parsedLine = if parsed != nil and parsed.hasKey(i): parsed[i] else: @[]
-          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
-        e.parsedNodes = parsed
-        e.uniforms.u_start_line.data = 0
-        e.uniforms.u_start_line.disable = false
-        session.insert(id, Text, e)
     rule updateCroppedText(Fact):
       what:
         (Global, WindowHeight, windowHeight)
@@ -446,6 +432,16 @@ proc fontInc*() =
     newFontSize = fontSize + fontSizeStep
   if newFontSize <= maxFontSize:
     session.insert(Global, FontSize, newFontSize)
+
+proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.NodeTable) =
+  var e = deepCopy(monoEntity)
+  for i in 0 ..< lines[].len:
+    let parsedLine = if parsed != nil and parsed.hasKey(i): parsed[i] else: @[]
+    discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
+  e.parsedNodes = parsed
+  e.uniforms.u_start_line.data = 0
+  e.uniforms.u_start_line.disable = false
+  session.insert(id, Text, e)
 
 proc init*(game: var RootGame, showAscii: bool, density: float) =
   # opengl
