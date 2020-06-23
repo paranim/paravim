@@ -281,28 +281,17 @@ let rules* =
           session.insert(id, ScrollTargetY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
           session.insert(id, ScrollTargetY, cursorBottom - textViewHeight)
-    rule parseText(Fact):
-      what:
-        (Global, InitComplete, true)
-        (id, Tree, tree, then = false)
-        (id, Parser, parser, then = false)
-        (id, Lines, lines)
-      then:
-        let newTree = tree_sitter.editTree(tree, parser, lines)
-        session.insert(id, Tree, newTree)
-        session.insert(id, ParsedNodes, tree_sitter.parse(newTree))
     rule updateText(Fact):
       what:
         (id, Text, oldText, then = false)
         (id, Lines, lines, then = false)
         (id, ParsedNodes, parsed)
       then:
-        var e = oldText
+        var e = deepCopy(monoEntity)
         for i in 0 ..< lines[].len:
           let parsedLine = if parsed != nil and parsed.hasKey(i): parsed[i] else: @[]
-          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine, i)
+          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
         e.parsedNodes = parsed
-        e.lines = lines
         e.uniforms.u_start_line.data = 0
         e.uniforms.u_start_line.disable = false
         session.insert(id, Text, e)

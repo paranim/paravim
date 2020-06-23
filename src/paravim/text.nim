@@ -33,7 +33,6 @@ type
   ]
   ParavimTextEntity* = object of InstancedEntity[ParavimTextEntityUniforms, ParavimTextEntityAttributes]
     parsedNodes*: tree_sitter.NodeTable
-    lines*: ref seq[string]
   UncompiledParavimTextEntity = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
 
 proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledParavimTextEntity =
@@ -165,13 +164,6 @@ proc cropLines*(instancedEntity: var ParavimTextEntity, startLine: int, endLine:
   cropInstanceUni(instancedEntity.uniforms.u_char_counts, startLine, endLine)
   instancedEntity.instanceCount = int32(j - i)
 
-proc clear*(instancedEntity: var ParavimTextEntity) =
-  instancedEntity.attributes.a_translate_matrix.data.new
-  instancedEntity.attributes.a_scale_matrix.data.new
-  instancedEntity.attributes.a_texture_matrix.data.new
-  instancedEntity.attributes.a_color.data.new
-  instancedEntity.instanceCount = 0
-
 proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node], startPos: float): float =
   let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
   result = startPos
@@ -196,19 +188,8 @@ proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, 
     instancedEntity.uniforms.u_char_counts.data[lineNum] += 1
     result += bakedChar.xadvance
 
-proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node], lineNum: int): float =
-  if lineNum >= 0 and instancedEntity.uniforms.u_char_counts.data.len > lineNum:
-    var nextEntity = instancedEntity
-    nextEntity.cropLines(lineNum+1, instancedEntity.uniforms.u_char_counts.data.len)
-    instancedEntity.cropLines(0, lineNum)
-    instancedEntity.uniforms.u_char_counts.data.add(0)
-    instancedEntity.uniforms.u_char_counts.disable = false
-    result = add(instancedEntity, entity, font, fontColor, text, parsedNodes, 0f)
-    instancedEntity.add(nextEntity)
-  else:
-    instancedEntity.uniforms.u_char_counts.data.add(0)
-    instancedEntity.uniforms.u_char_counts.disable = false
-    result = add(instancedEntity, entity, font, fontColor, text, parsedNodes, 0f)
-
 proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node]): float =
-  addLine(instancedEntity, entity, font, fontColor, text, parsedNodes, -1)
+  instancedEntity.uniforms.u_char_counts.data.add(0)
+  instancedEntity.uniforms.u_char_counts.disable = false
+  add(instancedEntity, entity, font, fontColor, text, parsedNodes, 0f)
+
