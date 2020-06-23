@@ -16,7 +16,7 @@ from structs import nil
 import tables
 from strutils import nil
 import times
-from tree_sitter import nil
+from tree_sitter import NodeTable
 from scroll import nil
 from sequtils import nil
 
@@ -52,7 +52,8 @@ type
     ScrollTargetX, ScrollTargetY,
     ScrollSpeedX, ScrollSpeedY,
     MaxCharCount, LineCount,
-    Tree, Parser, CroppedText
+    Tree, Parser,
+    CroppedText, Text, ParsedNodes,
   RefStrings = ref seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
@@ -96,12 +97,14 @@ schema Fact(Id, Attr):
   Tree: pointer
   Parser: pointer
   CroppedText: ParavimTextEntity
+  Text: ParavimTextEntity
+  ParsedNodes: NodeTable
 
 var
   session* = initSession(Fact)
   nextId* = Id.high.ord + 1
   baseMonoEntity: ptext.UncompiledTextEntity
-  monoEntity: ParavimTextEntity
+  monoEntity*: ParavimTextEntity
   uncompiledRectEntity: UncompiledTwoDEntity
   rectEntity: TwoDEntity
   rectsEntity: InstancedTwoDEntity
@@ -149,6 +152,7 @@ let rules* =
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
         (id, CroppedText, croppedText)
+        (id, Text, text)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
@@ -165,6 +169,7 @@ let rules* =
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
         (id, CroppedText, croppedText)
+        (id, Text, text)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
@@ -188,6 +193,8 @@ let rules* =
         (id, Tree, tree)
         (id, Parser, parser)
         (id, CroppedText, croppedText)
+        (id, Text, text)
+        (id, ParsedNodes, parsed)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
@@ -209,6 +216,8 @@ let rules* =
         session.retract(id, Parser, parser)
         tree_sitter.deleteParser(parser)
         session.retract(id, CroppedText, croppedText)
+        session.retract(id, Text, text)
+        session.retract(id, ParsedNodes, parsed)
         session.retract(id, VimVisualRange, visualRange)
         session.retract(id, VimVisualBlockMode, visualBlockMode)
         session.retract(id, VimSearchRanges, searchRanges)
@@ -272,15 +281,38 @@ let rules* =
           session.insert(id, ScrollTargetY, cursorTop)
         elif cursorBottom > scrollBottom and scrollBottom > 0:
           session.insert(id, ScrollTargetY, cursorBottom - textViewHeight)
-    rule updateCroppedText(Fact):
+    rule parseText(Fact):
       what:
         (Global, InitComplete, true)
+        (id, Tree, tree, then = false)
+        (id, Parser, parser, then = false)
+        (id, Lines, lines)
+      then:
+        let newTree = tree_sitter.editTree(tree, parser, lines)
+        session.insert(id, Tree, newTree)
+        session.insert(id, ParsedNodes, tree_sitter.parse(newTree))
+    rule updateText(Fact):
+      what:
+        (id, Text, oldText, then = false)
+        (id, Lines, lines, then = false)
+        (id, ParsedNodes, parsed)
+      then:
+        var e = oldText
+        for i in 0 ..< lines[].len:
+          let parsedLine = if parsed != nil and parsed.hasKey(i): parsed[i] else: @[]
+          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine, i)
+        e.parsedNodes = parsed
+        e.lines = lines
+        e.uniforms.u_start_line.data = 0
+        e.uniforms.u_start_line.disable = false
+        session.insert(id, Text, e)
+    rule updateCroppedText(Fact):
+      what:
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
         (id, ScrollY, scrollY)
-        (id, Tree, tree)
-        (id, Parser, parser)
-        (id, Lines, lines)
+        (id, Lines, lines, then = false)
+        (id, ParsedNodes, parsed)
       then:
         var e = deepCopy(monoEntity)
         let
@@ -288,9 +320,9 @@ let rules* =
           lineCount = lines[].len
           linesToSkip = min(int(scrollY / fontHeight), lineCount).max(0)
           linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, lineCount)
-          parsed = tree_sitter.parse(tree)
         for i in linesToSkip ..< linesToCrop:
-          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], if parsed.hasKey(i): parsed[i] else: @[])
+          let parsedLine = if parsed != nil and parsed.hasKey(i): parsed[i] else: @[]
+          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
         session.insert(id, CroppedText, e)
@@ -548,6 +580,14 @@ proc tick*(game: RootGame, clear: bool): bool =
         e.project(float(windowWidth), float(windowHeight))
         e.invert(camera)
         e.scale(fontSize, fontSize)
+        render(game, e)
+    # mini map
+    block:
+      var e = currentBuffer.text
+      if e.instanceCount > 0:
+        e.project(float(windowWidth), float(windowHeight))
+        e.invert(camera)
+        e.scale(fontSize / 5f, fontSize / 5f)
         render(game, e)
 
   # command line background

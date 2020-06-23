@@ -62,8 +62,9 @@ proc echoTree*(tree: pointer) =
 
 type
   Node* = tuple[kind: string, startCol: int, endCol: int]
+  NodeTable* = TableRef[int, seq[Node]]
 
-proc parse*(node: TSNode, nodes: var Table[int, seq[Node]]) =
+proc parse*(node: TSNode, nodes: var NodeTable) =
   let kind = $ ts_node_type(node)
   if colors.syntaxColors.hasKey(kind):
     let
@@ -84,9 +85,10 @@ proc parse*(node: TSNode, nodes: var Table[int, seq[Node]]) =
       let child = ts_node_child(node, i)
       parse(child, nodes)
 
-proc parse*(tree: pointer): Table[int, seq[Node]] =
+proc parse*(tree: pointer): NodeTable =
   if tree != nil:
     let node = ts_tree_root_node(tree)
+    result = newTable[int, seq[Node]]()
     parse(node, result)
 
 proc editTree*(tree: pointer, parser: pointer, newLines: ref seq[string]): pointer =

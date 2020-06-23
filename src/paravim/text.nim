@@ -32,6 +32,8 @@ type
     a_color: Attribute[GLfloat]
   ]
   ParavimTextEntity* = object of InstancedEntity[ParavimTextEntityUniforms, ParavimTextEntityAttributes]
+    parsedNodes*: tree_sitter.NodeTable
+    lines*: ref seq[string]
   UncompiledParavimTextEntity = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
 
 proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledParavimTextEntity =
@@ -62,6 +64,14 @@ proc addInstanceAttr[T](attr: var Attribute[T], uni: Uniform[Vec4[T]]) =
   for x in 0 .. 3:
     attr.data[].add(uni.data[x])
   attr.disable = false
+
+proc addInstanceAttr[T](attr: var Attribute[T], attr2: Attribute[T]) =
+  attr.data[].add(attr2.data[])
+  attr.disable = false
+
+proc addInstanceUni[T](uni: var Uniform[seq[T]], uni2: Uniform[seq[T]]) =
+  uni.data.add(uni2.data)
+  uni.disable = false
 
 proc setInstanceAttr[T](attr: var Attribute[T], i: int, uni: Uniform[Mat3x3[T]]) =
   for r in 0 .. 2:
@@ -94,6 +104,10 @@ proc cropInstanceAttr[T](attr: var Attribute[T], i: int, j: int) =
   attr.data[] = data[][i*size ..< j*size]
   attr.disable = false
 
+proc cropInstanceUni[T](uni: var Uniform[seq[T]], i: int, j: int) =
+  uni.data = uni.data[i ..< j]
+  uni.disable = false
+
 proc add*(instancedEntity: var UncompiledParavimTextEntity, entity: UncompiledTextEntity) =
   addInstanceAttr(instancedEntity.attributes.a_translate_matrix, entity.uniforms.u_translate_matrix)
   addInstanceAttr(instancedEntity.attributes.a_scale_matrix, entity.uniforms.u_scale_matrix)
@@ -107,6 +121,14 @@ proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity) 
   addInstanceAttr(instancedEntity.attributes.a_texture_matrix, entity.uniforms.u_texture_matrix)
   addInstanceAttr(instancedEntity.attributes.a_color, entity.uniforms.u_color)
   instancedEntity.instanceCount += 1
+
+proc add*(instancedEntity: var ParavimTextEntity, entity: ParavimTextEntity) =
+  addInstanceAttr(instancedEntity.attributes.a_translate_matrix, entity.attributes.a_translate_matrix)
+  addInstanceAttr(instancedEntity.attributes.a_scale_matrix, entity.attributes.a_scale_matrix)
+  addInstanceAttr(instancedEntity.attributes.a_texture_matrix, entity.attributes.a_texture_matrix)
+  addInstanceAttr(instancedEntity.attributes.a_color, entity.attributes.a_color)
+  addInstanceUni(instancedEntity.uniforms.u_char_counts, entity.uniforms.u_char_counts)
+  instancedEntity.instanceCount += entity.instanceCount
 
 proc `[]`*(instancedEntity: ParavimTextEntity or UncompiledParavimTextEntity, i: int): UncompiledTextEntity =
   result.attributes.a_position = instancedEntity.attributes.a_position
@@ -130,11 +152,25 @@ proc `[]=`*(instancedEntity: var UncompiledParavimTextEntity, i: int, entity: Un
   setInstanceAttr(instancedEntity.attributes.a_texture_matrix, i, entity.uniforms.u_texture_matrix)
   setInstanceAttr(instancedEntity.attributes.a_color, i, entity.uniforms.u_color)
 
-proc crop*(instancedEntity: var ParavimTextEntity, i: int, j: int) =
+proc cropLines*(instancedEntity: var ParavimTextEntity, startLine: int, endLine: int) =
+  let
+    prevLines = instancedEntity.uniforms.u_char_counts.data[0 ..< startLine]
+    currLines = instancedEntity.uniforms.u_char_counts.data[startLine ..< endLine]
+    i = math.sum(prevLines)
+    j = i + math.sum(currLines)
   cropInstanceAttr(instancedEntity.attributes.a_translate_matrix, i, j)
   cropInstanceAttr(instancedEntity.attributes.a_scale_matrix, i, j)
   cropInstanceAttr(instancedEntity.attributes.a_texture_matrix, i, j)
   cropInstanceAttr(instancedEntity.attributes.a_color, i, j)
+  cropInstanceUni(instancedEntity.uniforms.u_char_counts, startLine, endLine)
+  instancedEntity.instanceCount = int32(j - i)
+
+proc clear*(instancedEntity: var ParavimTextEntity) =
+  instancedEntity.attributes.a_translate_matrix.data.new
+  instancedEntity.attributes.a_scale_matrix.data.new
+  instancedEntity.attributes.a_texture_matrix.data.new
+  instancedEntity.attributes.a_color.data.new
+  instancedEntity.instanceCount = 0
 
 proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node], startPos: float): float =
   let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
@@ -160,7 +196,19 @@ proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, 
     instancedEntity.uniforms.u_char_counts.data[lineNum] += 1
     result += bakedChar.xadvance
 
+proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node], lineNum: int): float =
+  if lineNum >= 0 and instancedEntity.uniforms.u_char_counts.data.len > lineNum:
+    var nextEntity = instancedEntity
+    nextEntity.cropLines(lineNum+1, instancedEntity.uniforms.u_char_counts.data.len)
+    instancedEntity.cropLines(0, lineNum)
+    instancedEntity.uniforms.u_char_counts.data.add(0)
+    instancedEntity.uniforms.u_char_counts.disable = false
+    result = add(instancedEntity, entity, font, fontColor, text, parsedNodes, 0f)
+    instancedEntity.add(nextEntity)
+  else:
+    instancedEntity.uniforms.u_char_counts.data.add(0)
+    instancedEntity.uniforms.u_char_counts.disable = false
+    result = add(instancedEntity, entity, font, fontColor, text, parsedNodes, 0f)
+
 proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node]): float =
-  instancedEntity.uniforms.u_char_counts.data.add(0)
-  instancedEntity.uniforms.u_char_counts.disable = false
-  add(instancedEntity, entity, font, fontColor, text, parsedNodes, 0f)
+  addLine(instancedEntity, entity, font, fontColor, text, parsedNodes, -1)

@@ -174,6 +174,7 @@ proc onBufEnter(buf: buf_T) =
     let (tree, parser) = tree_sitter.init(pathStr, lines[])
     session.insert(sessionId, Tree, tree)
     session.insert(sessionId, Parser, parser)
+    session.insert(sessionId, Text, deepCopy(monoEntity))
     session.insert(sessionId, VimVisualRange, (0, 0, 0, 0))
     session.insert(sessionId, VimVisualBlockMode, false)
     session.insert(sessionId, VimSearchRanges, @[])
@@ -213,9 +214,6 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   if newLines[].len == 0:
     newLines[] = @[""]
   session.insert(id, Lines, newLines)
-  # re-parse if necessary
-  let newTree = tree_sitter.editTree(buffer.tree, buffer.parser, newLines)
-  session.insert(id, Tree, newTree)
 
 proc onStopSearch() {.cdecl.} =
   session.insert(Global, VimShowSearch, false)
