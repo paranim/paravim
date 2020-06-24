@@ -24,6 +24,7 @@ const
   fontSizeStep = 1/16
   minFontSize = 1/8
   maxFontSize = 1
+  defaultFontSize = 1/4
   asciiArt* = {"smile": strutils.splitLines(staticRead("assets/ascii/smile.txt")),
                "intro": strutils.splitLines(staticRead("assets/ascii/intro.txt")),
                "cat": strutils.splitLines(staticRead("assets/ascii/cat.txt")),
@@ -36,7 +37,6 @@ type
   Attr* = enum
     DeltaTime,
     WindowTitle, WindowTitleCallback,
-    InitComplete,
     WindowWidth, WindowHeight,
     MouseX, MouseY,
     FontSize, CurrentBufferId,
@@ -62,7 +62,6 @@ schema Fact(Id, Attr):
   DeltaTime: float
   WindowTitle: string
   WindowTitleCallback: WindowTitleCallbackType
-  InitComplete: bool
   WindowWidth: int
   WindowHeight: int
   MouseX: float
@@ -513,8 +512,7 @@ proc init*(game: var RootGame, showAscii: bool, density: float) =
   rectsEntity = compile(game, initInstancedEntity(uncompiledRectEntity))
 
   # set initial values
-  session.insert(Global, InitComplete, true)
-  session.insert(Global, FontSize, 1/4 * density)
+  session.insert(Global, FontSize, defaultFontSize * density)
   let ascii =
     if showAscii:
       let
@@ -626,14 +624,21 @@ proc tick*(game: RootGame, clear: bool): bool =
     # mini map
     block:
       var e = currentBuffer.text
-      let miniFontSize = fontSize / 5f
-      if miniFontSize >= 1/10:
-        e.uniforms.u_show_blocks.data = 0
-        e.uniforms.u_show_blocks.disable = false
-      if e.instanceCount > 0:
+      const
+        miniScale = 6f
+        minSizeToShowChars = (defaultFontSize * 2) / miniScale
+        minChars = 30f # minimum number of chars that minimap must be able to display
+      let
+        minimapFontSize = fontSize / miniScale
+        minimapWidth = float(windowWidth)/miniScale
+        minimapChars = minimapWidth/(minimapFontSize * text.monoFontWidth) # number of chars that can fit in minimap
+      if e.instanceCount > 0 and minimapChars >= minChars:
+        if minimapFontSize >= minSizeToShowChars:
+          e.uniforms.u_show_blocks.data = 0
+          e.uniforms.u_show_blocks.disable = false
         e.project(float(windowWidth), float(windowHeight))
-        e.invert(camera)
-        e.scale(miniFontSize, miniFontSize)
+        e.translate(float(windowWidth) - minimapWidth, 0f)
+        e.scale(minimapFontSize, minimapFontSize)
         render(game, e)
 
   # command line background
