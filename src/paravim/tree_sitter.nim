@@ -90,7 +90,7 @@ proc parse*(tree: pointer): Nodes =
   if tree != nil:
     let node = ts_tree_root_node(tree)
     new(result)
-    result[] = @[]
+    result[] = @[newSeq[Node]()]
     parse(node, result)
 
 proc editTree*(tree: pointer, parser: pointer, newLines: ref seq[string]): pointer =

@@ -489,6 +489,9 @@ proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, te
     text.updateColors(e, parsed, lines, textColor)
   e.parsedNodes = parsed
   e.lineCount = lines[].len
+  if e.lineCount == 1 and lines[][0] == "":
+    e.uniforms.u_char_counts.data = @[0.int32]
+    e.uniforms.u_char_counts.disable = false
   e.uniforms.u_start_line.data = 0
   e.uniforms.u_start_line.disable = false
   e.uniforms.u_show_blocks.data = 1
