@@ -677,13 +677,20 @@ proc tick*(game: RootGame, clear: bool): bool =
     if currentBuffer.showMinimap and currentBuffer.minimapText.instanceCount > 0:
       block:
         var e = deepCopy(rectsEntity)
-        let minimapWidth = float(windowWidth)/minimapScale
-        var e2 = uncompiledRectEntity
-        e2.project(float(windowWidth), float(windowHeight))
-        e2.translate(float(windowWidth) - minimapWidth, 0)
-        e2.scale(minimapWidth, float(windowHeight)-fontHeight)
-        e2.color(bgColor)
-        e.add(e2)
+        let minimapWidth = float(windowWidth) / minimapScale
+        var bg = uncompiledRectEntity
+        bg.project(float(windowWidth), float(windowHeight))
+        bg.translate(float(windowWidth) - minimapWidth, 0)
+        bg.scale(minimapWidth, float(windowHeight)-fontHeight)
+        bg.color(bgColor)
+        e.add(bg)
+        var view = uncompiledRectEntity
+        view.project(float(windowWidth), float(windowHeight))
+        view.translate(float(windowWidth) - minimapWidth, 0)
+        view.translate(0f, currentBuffer.scrollY / minimapScale)
+        view.scale(minimapWidth, float(windowHeight) / minimapScale)
+        view.color(minimapViewColor)
+        e.add(view)
         render(game, e)
       block:
         var e = currentBuffer.minimapText
