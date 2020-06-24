@@ -626,7 +626,7 @@ proc tick*(game: RootGame, clear: bool): bool =
     block:
       var e = currentBuffer.text
       let miniFontSize = fontSize / 5f
-      if miniFontSize > 1/10:
+      if miniFontSize >= 1/10:
         e.uniforms.u_show_blocks.data = 0
         e.uniforms.u_show_blocks.disable = false
       if e.instanceCount > 0:
