@@ -33,7 +33,7 @@ type
     a_color: Attribute[GLfloat]
   ]
   ParavimTextEntity* = object of InstancedEntity[ParavimTextEntityUniforms, ParavimTextEntityAttributes]
-    parsedNodes*: tree_sitter.NodeTable
+    parsedNodes*: tree_sitter.Nodes
   UncompiledParavimTextEntity = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
 
 proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledParavimTextEntity =

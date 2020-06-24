@@ -16,7 +16,7 @@ from structs import nil
 import tables
 from strutils import nil
 import times
-from tree_sitter import NodeTable
+from tree_sitter import Nodes
 from scroll import nil
 from sequtils import nil
 
@@ -98,7 +98,7 @@ schema Fact(Id, Attr):
   Parser: pointer
   CroppedText: ParavimTextEntity
   Text: ParavimTextEntity
-  ParsedNodes: NodeTable
+  ParsedNodes: Nodes
 
 var
   session* = initSession(Fact)
@@ -296,7 +296,7 @@ let rules* =
           linesToSkip = min(int(scrollY / fontHeight), lineCount).max(0)
           linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, lineCount)
         for i in linesToSkip ..< linesToCrop:
-          let parsedLine = if parsed != nil and parsed.hasKey(i): parsed[i] else: @[]
+          let parsedLine = if parsed != nil: parsed[i] else: @[]
           discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
@@ -435,10 +435,10 @@ proc fontInc*() =
   if newFontSize <= maxFontSize:
     session.insert(Global, FontSize, newFontSize)
 
-proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.NodeTable) =
+proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes) =
   var e = deepCopy(monoEntity)
   for i in 0 ..< lines[].len:
-    let parsedLine = if parsed != nil and parsed.hasKey(i): parsed[i] else: @[]
+    let parsedLine = if parsed != nil: parsed[i] else: @[]
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
   e.parsedNodes = parsed
   e.uniforms.u_start_line.data = 0
@@ -447,24 +447,27 @@ proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.NodeTable
   e.uniforms.u_show_blocks.disable = false
   session.insert(id, Text, e)
 
-proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.NodeTable, textEntity: ParavimTextEntity, bu: BufferUpdateTuple) =
+proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, textEntity: ParavimTextEntity, bu: BufferUpdateTuple) =
   var
     e = textEntity
     nextEntity = textEntity
-  text.cropLines(e, 0, bu.firstLine)
+    startLine = bu.firstLine
+    endLine = startLine + bu.lines.len
+  text.cropLines(e, 0, startLine)
   if bu.lineCountChange == 0:
-    text.cropLines(nextEntity, bu.firstLine + bu.lines.len, lines[].len)
+    text.cropLines(nextEntity, endLine, lines[].len)
   else:
     let linesToRemove =
       if bu.lineCountChange < 0:
         (-1 * bu.lineCountChange) + bu.lines.len
       else:
         bu.lines.len - bu.lineCountChange
-    text.cropLines(nextEntity, bu.firstLine + linesToRemove)
+    endLine = startLine + linesToRemove
+    text.cropLines(nextEntity, endLine)
   for i in 0 ..< bu.lines.len:
     let
       lineNum = bu.firstLine + i
-      parsedLine = if parsed != nil and parsed.hasKey(lineNum): parsed[lineNum] else: @[]
+      parsedLine = if parsed != nil: parsed[lineNum] else: @[]
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, bu.lines[i], parsedLine)
   text.add(e, nextEntity)
   e.parsedNodes = parsed

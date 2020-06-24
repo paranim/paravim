@@ -62,9 +62,9 @@ proc echoTree*(tree: pointer) =
 
 type
   Node* = tuple[kind: string, startCol: int, endCol: int]
-  NodeTable* = TableRef[int, seq[Node]]
+  Nodes* = ref seq[seq[Node]]
 
-proc parse*(node: TSNode, nodes: var NodeTable) =
+proc parse*(node: TSNode, nodes: var Nodes) =
   let kind = $ ts_node_type(node)
   if colors.syntaxColors.hasKey(kind):
     let
@@ -77,18 +77,20 @@ proc parse*(node: TSNode, nodes: var NodeTable) =
         endLine = endPoint.row.int
         startCol = if lineNum == startLine: startPoint.column.int else: 0
         endCol = if lineNum == endLine: endPoint.column.int else: -1
-      if not nodes.hasKey(lineNum):
-        nodes[lineNum] = @[]
-      nodes[lineNum].add((kind, startCol, endCol))
+      if nodes[].len-1 < lineNum:
+        for _ in nodes[].len-1 .. lineNum:
+          nodes[].add(newSeq[Node]())
+      nodes[][lineNum].add((kind, startCol, endCol))
   else:
     for i in 0 ..< ts_node_child_count(node):
       let child = ts_node_child(node, i)
       parse(child, nodes)
 
-proc parse*(tree: pointer): NodeTable =
+proc parse*(tree: pointer): Nodes =
   if tree != nil:
     let node = ts_tree_root_node(tree)
-    result = newTable[int, seq[Node]]()
+    new(result)
+    result[] = @[]
     parse(node, result)
 
 proc editTree*(tree: pointer, parser: pointer, newLines: ref seq[string]): pointer =
