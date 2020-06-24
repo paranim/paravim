@@ -53,7 +53,8 @@ type
     ScrollSpeedX, ScrollSpeedY,
     MaxCharCount, LineCount,
     Tree, Parser,
-    CroppedText, Text, ParsedNodes,
+    Text, CroppedText, MinimapText,
+    ShowMinimap,
   RefStrings = ref seq[string]
   RangeTuples = seq[RangeTuple]
   WindowTitleCallbackType = proc (title: string)
@@ -95,9 +96,10 @@ schema Fact(Id, Attr):
   LineCount: int
   Tree: pointer
   Parser: pointer
-  CroppedText: ParavimTextEntity
   Text: ParavimTextEntity
-  ParsedNodes: Nodes
+  CroppedText: ParavimTextEntity
+  MinimapText: ParavimTextEntity
+  ShowMinimap: bool
 
 var
   session* = initSession(Fact)
@@ -150,8 +152,10 @@ let rules* =
         (id, ScrollTargetY, scrollTargetY)
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
-        (id, CroppedText, croppedText)
         (id, Text, text)
+        (id, CroppedText, croppedText)
+        (id, MinimapText, minimapText)
+        (id, ShowMinimap, showMinimap)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
@@ -167,8 +171,10 @@ let rules* =
         (id, ScrollTargetY, scrollTargetY)
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
-        (id, CroppedText, croppedText)
         (id, Text, text)
+        (id, CroppedText, croppedText)
+        (id, MinimapText, minimapText)
+        (id, ShowMinimap, showMinimap)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
@@ -191,9 +197,10 @@ let rules* =
         (id, LineCount, lineCount)
         (id, Tree, tree)
         (id, Parser, parser)
-        (id, CroppedText, croppedText)
         (id, Text, text)
-        (id, ParsedNodes, parsed)
+        (id, CroppedText, croppedText)
+        (id, MinimapText, minimapText)
+        (id, ShowMinimap, showMinimap)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
         (id, VimSearchRanges, searchRanges)
@@ -214,9 +221,10 @@ let rules* =
         tree_sitter.deleteTree(tree)
         session.retract(id, Parser, parser)
         tree_sitter.deleteParser(parser)
-        session.retract(id, CroppedText, croppedText)
         session.retract(id, Text, text)
-        session.retract(id, ParsedNodes, parsed)
+        session.retract(id, CroppedText, croppedText)
+        session.retract(id, MinimapText, minimapText)
+        session.retract(id, ShowMinimap, showMinimap)
         session.retract(id, VimVisualRange, visualRange)
         session.retract(id, VimVisualBlockMode, visualBlockMode)
         session.retract(id, VimSearchRanges, searchRanges)
@@ -298,6 +306,35 @@ let rules* =
         e.uniforms.u_show_blocks.data = 0
         e.uniforms.u_show_blocks.disable = false
         session.insert(id, CroppedText, e)
+    rule updateMinimapText(Fact):
+      what:
+        (Global, WindowWidth, windowWidth)
+        (Global, WindowHeight, windowHeight)
+        (Global, FontSize, fontSize)
+        (id, ScrollY, scrollY)
+        (id, Text, fullText)
+      then:
+        var e = fullText
+        const
+          miniScale = 6f
+          minSizeToShowChars = (defaultFontSize * 2) / miniScale
+          minChars = 30f # minimum number of chars that minimap must be able to display
+        let
+          minimapFontSize = fontSize / miniScale
+          minimapWidth = float(windowWidth)/miniScale
+          minimapChars = minimapWidth/(minimapFontSize * text.monoFontWidth) # number of chars that can fit in minimap
+        if minimapFontSize >= minSizeToShowChars:
+          e.uniforms.u_show_blocks.data = 0
+          e.uniforms.u_show_blocks.disable = false
+        e.project(float(windowWidth), float(windowHeight))
+        e.translate(float(windowWidth) - minimapWidth, 0f)
+        e.scale(minimapFontSize, minimapFontSize)
+        session.insert(id, MinimapText, e)
+        let
+          fontHeight = text.monoFont.height * fontSize
+          textViewHeight = windowHeight.float - fontHeight
+          documentHeight = fullText.lineCount.float * fontHeight
+        session.insert(id, ShowMinimap, minimapChars >= minChars and documentHeight > textViewHeight)
     rule rubberBandEffectX(Fact):
       what:
         (Global, WindowWidth, windowWidth)
@@ -625,22 +662,8 @@ proc tick*(game: RootGame, clear: bool): bool =
         render(game, e)
     # mini map
     block:
-      var e = currentBuffer.text
-      const
-        miniScale = 6f
-        minSizeToShowChars = (defaultFontSize * 2) / miniScale
-        minChars = 30f # minimum number of chars that minimap must be able to display
-      let
-        minimapFontSize = fontSize / miniScale
-        minimapWidth = float(windowWidth)/miniScale
-        minimapChars = minimapWidth/(minimapFontSize * text.monoFontWidth) # number of chars that can fit in minimap
-      if e.instanceCount > 0 and minimapChars >= minChars:
-        if minimapFontSize >= minSizeToShowChars:
-          e.uniforms.u_show_blocks.data = 0
-          e.uniforms.u_show_blocks.disable = false
-        e.project(float(windowWidth), float(windowHeight))
-        e.translate(float(windowWidth) - minimapWidth, 0f)
-        e.scale(minimapFontSize, minimapFontSize)
+      if currentBuffer.showMinimap and currentBuffer.minimapText.instanceCount > 0:
+        var e = currentBuffer.minimapText
         render(game, e)
 
   # command line background
