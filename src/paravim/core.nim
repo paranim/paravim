@@ -322,7 +322,8 @@ let rules* =
         var e = fullText
         const
           minSizeToShowChars = (defaultFontSize * 2) / minimapScale
-          minChars = 30f # minimum number of chars that minimap must be able to display
+          minChars = 30 # minimum number of chars that minimap must be able to display
+          maxLines = 1000 # u_char_counts can only hold this many
         let
           fontWidth = text.monoFontWidth * fontSize
           fontHeight = text.monoFont.height * fontSize
@@ -331,8 +332,9 @@ let rules* =
           minimapFontHeight = text.monoFont.height * minimapFontSize
           minimapHeight = float(windowHeight) - fontHeight
           minimapWidth = float(windowWidth) / minimapScale
-          minimapChars = minimapWidth/(minimapFontSize * text.monoFontWidth) # number of chars that can fit in minimap
-          minimapLineCount = int(minimapHeight / minimapFontHeight)
+          # number of chars that can fit in minimap
+          minimapChars = int(minimapWidth/(minimapFontSize * text.monoFontWidth))
+          minimapLineCount = min(int(minimapHeight / minimapFontHeight), maxLines)
           startColumn = int(scrollX / fontWidth)
         if fullText.lineCount > minimapLineCount:
           text.cropLines(e, 0, minimapLineCount)
