@@ -326,9 +326,15 @@ let rules* =
           minSizeToShowChars = (defaultFontSize * 2) / minimapScale
           minChars = 30f # minimum number of chars that minimap must be able to display
         let
+          fontHeight = text.monoFont.height * fontSize
           minimapFontSize = fontSize / minimapScale
-          minimapWidth = float(windowWidth)/minimapScale
+          minimapFontHeight = text.monoFont.height * minimapFontSize
+          minimapHeight = float(windowHeight) - fontHeight
+          minimapWidth = float(windowWidth) / minimapScale
           minimapChars = minimapWidth/(minimapFontSize * text.monoFontWidth) # number of chars that can fit in minimap
+          minimapLineCount = int(minimapHeight / minimapFontHeight)
+        if fullText.lineCount > minimapLineCount:
+          text.cropLines(e, 0, minimapLineCount)
         if minimapFontSize >= minSizeToShowChars:
           e.uniforms.u_show_blocks.data = 0
           e.uniforms.u_show_blocks.disable = false
@@ -337,7 +343,6 @@ let rules* =
         e.scale(minimapFontSize, minimapFontSize)
         session.insert(id, MinimapText, e)
         let
-          fontHeight = text.monoFont.height * fontSize
           textViewHeight = windowHeight.float - fontHeight
           documentHeight = fullText.lineCount.float * fontHeight
           showMinimapNew = minimapChars >= minChars and documentHeight > textViewHeight
@@ -682,7 +687,7 @@ proc tick*(game: RootGame, clear: bool): bool =
         var e2 = uncompiledRectEntity
         e2.project(float(windowWidth), float(windowHeight))
         e2.translate(float(windowWidth) - minimapWidth, 0)
-        e2.scale(minimapWidth, float(windowWidth))
+        e2.scale(minimapWidth, float(windowHeight)-fontHeight)
         e2.color(bgColor)
         e.add(e2)
         render(game, e)
