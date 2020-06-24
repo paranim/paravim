@@ -286,18 +286,15 @@ let rules* =
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
         (id, ScrollY, scrollY)
-        (id, Lines, lines, then = false)
-        (id, ParsedNodes, parsed)
+        (id, LineCount, lineCount)
+        (id, Text, fullText)
       then:
-        var e = deepCopy(monoEntity)
+        var e = fullText
         let
           fontHeight = text.monoFont.height * fontSize
-          lineCount = lines[].len
           linesToSkip = min(int(scrollY / fontHeight), lineCount).max(0)
           linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, lineCount)
-        for i in linesToSkip ..< linesToCrop:
-          let parsedLine = if parsed != nil: parsed[i] else: @[]
-          discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
+        text.cropLines(e, linesToSkip, linesToCrop)
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
         e.uniforms.u_show_blocks.data = 0
