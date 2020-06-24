@@ -5,6 +5,7 @@ import paratext, paratext/gl/text
 from tree_sitter import Node
 from colors import nil
 from math import nil
+import tables
 
 const
   monoFontRaw = staticRead("assets/ttf/FiraCode-Regular.ttf")
@@ -169,6 +170,12 @@ proc cropLines*(instancedEntity: var ParavimTextEntity, startLine: int, endLine:
 proc cropLines*(instancedEntity: var ParavimTextEntity, startLine: int) =
   cropLines(instancedEntity, startLine, instancedEntity.uniforms.u_char_counts.data.len)
 
+proc getColor(col: int, parsedNodes: openArray[Node], defaultColor: glm.Vec4[GLfloat]): glm.Vec4[GLfloat] =
+  result = defaultColor
+  for (kind, startCol, endCol) in parsedNodes:
+    if col >= startCol and (col < endCol or endCol == -1):
+      return colors.syntaxColors[kind]
+
 proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node], startPos: float): float =
   let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
   result = startPos
@@ -181,11 +188,7 @@ proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, 
           font.chars[charIndex]
         else: # if char isn't found, use the space char
           font.chars[0]
-    var color = fontColor
-    for (kind, startCol, endCol) in parsedNodes:
-      if i >= startCol and (i < endCol or endCol == -1):
-        color = colors.syntaxColors[kind]
-        break
+    let color = getColor(i, parsedNodes, fontColor)
     var e = entity
     e.crop(bakedChar, result, font.baseline)
     e.color(color)
@@ -198,3 +201,10 @@ proc addLine*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEnti
   instancedEntity.uniforms.u_char_counts.disable = false
   add(instancedEntity, entity, font, fontColor, text, parsedNodes, 0f)
 
+proc updateColors*(instancedEntity: var ParavimTextEntity, parsedNodes: tree_sitter.Nodes, lines: ref seq[string], fontColor: glm.Vec4[GLfloat]) =
+  instancedEntity.attributes.a_color.data.new
+  for lineNum in 0 ..< lines[].len:
+    for colNum in 0 ..< lines[][lineNum].len:
+      let color = getColor(colNum, parsedNodes[][lineNum], fontColor)
+      for x in 0 .. 3:
+        instancedEntity.attributes.a_color.data[].add(color[x])
