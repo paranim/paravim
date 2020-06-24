@@ -625,10 +625,14 @@ proc tick*(game: RootGame, clear: bool): bool =
     # mini map
     block:
       var e = currentBuffer.text
+      let miniFontSize = fontSize / 5f
+      if miniFontSize > 1/10:
+        e.uniforms.u_show_blocks.data = 0
+        e.uniforms.u_show_blocks.disable = false
       if e.instanceCount > 0:
         e.project(float(windowWidth), float(windowHeight))
         e.invert(camera)
-        e.scale(fontSize / 5f, fontSize / 5f)
+        e.scale(miniFontSize, miniFontSize)
         render(game, e)
 
   # command line background
