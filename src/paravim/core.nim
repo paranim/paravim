@@ -337,7 +337,7 @@ let rules* =
           minimapHeight = float(windowHeight) - fontHeight
           minimapWidth = float(windowWidth) / minimapScale
           # number of chars that can fit in minimap
-          minimapChars = int(minimapWidth/(minimapFontSize * text.monoFontWidth))
+          minimapChars = int(minimapWidth / minimapFontWidth)
           minimapLineCount = min(int(minimapHeight / minimapFontHeight), maxLines)
           minimapIsOverflowing = fullText.lineCount > minimapLineCount
           startColumn = int(scrollX / fontWidth)
@@ -384,8 +384,8 @@ let rules* =
         # show minimap
         let
           textViewHeight = windowHeight.float - fontHeight
-          documentHeight = fullText.lineCount.float * fontHeight
-          showMinimapNew = minimapChars >= minChars and documentHeight > textViewHeight
+          visibleLines = int(textViewHeight / fontHeight)
+          showMinimapNew = minimapChars >= minChars and fullText.lineCount > visibleLines
         if showMinimap != showMinimapNew:
           session.insert(id, ShowMinimap, showMinimapNew)
     rule rubberBandEffectX(Fact):
