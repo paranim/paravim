@@ -286,14 +286,13 @@ let rules* =
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
         (id, ScrollY, scrollY)
-        (id, LineCount, lineCount)
         (id, Text, fullText)
       then:
         var e = fullText
         let
           fontHeight = text.monoFont.height * fontSize
-          linesToSkip = min(int(scrollY / fontHeight), lineCount).max(0)
-          linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, lineCount)
+          linesToSkip = min(int(scrollY / fontHeight), e.lineCount).max(0)
+          linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, e.lineCount)
         text.cropLines(e, linesToSkip, linesToCrop)
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
@@ -438,6 +437,7 @@ proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes) =
     let parsedLine = if parsed != nil: parsed[i] else: @[]
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
   e.parsedNodes = parsed
+  e.lineCount = lines[].len
   e.uniforms.u_start_line.data = 0
   e.uniforms.u_start_line.disable = false
   e.uniforms.u_show_blocks.data = 1
@@ -488,6 +488,7 @@ proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, te
   if parsedNodesChanged(parsed, e, startLine, oldEndLine, newEndLine):
     text.updateColors(e, parsed, lines, textColor)
   e.parsedNodes = parsed
+  e.lineCount = lines[].len
   e.uniforms.u_start_line.data = 0
   e.uniforms.u_start_line.disable = false
   e.uniforms.u_show_blocks.data = 1

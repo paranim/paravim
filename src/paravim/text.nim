@@ -35,6 +35,7 @@ type
   ]
   ParavimTextEntity* = object of InstancedEntity[ParavimTextEntityUniforms, ParavimTextEntityAttributes]
     parsedNodes*: tree_sitter.Nodes
+    lineCount*: int
   UncompiledParavimTextEntity = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
 
 proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledParavimTextEntity =
