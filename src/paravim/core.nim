@@ -448,7 +448,31 @@ proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.NodeTable
   session.insert(id, Text, e)
 
 proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.NodeTable, textEntity: ParavimTextEntity, bu: BufferUpdateTuple) =
-  insertTextEntity(id, lines, parsed)
+  var
+    e = textEntity
+    nextEntity = textEntity
+  text.cropLines(e, 0, bu.firstLine)
+  if bu.lineCountChange == 0:
+    text.cropLines(nextEntity, bu.firstLine + bu.lines.len, lines[].len)
+  else:
+    let linesToRemove =
+      if bu.lineCountChange < 0:
+        (-1 * bu.lineCountChange) + bu.lines.len
+      else:
+        bu.lines.len - bu.lineCountChange
+    text.cropLines(nextEntity, bu.firstLine + linesToRemove)
+  for i in 0 ..< bu.lines.len:
+    let
+      lineNum = bu.firstLine + i
+      parsedLine = if parsed != nil and parsed.hasKey(lineNum): parsed[lineNum] else: @[]
+    discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, bu.lines[i], parsedLine)
+  text.add(e, nextEntity)
+  e.parsedNodes = parsed
+  e.uniforms.u_start_line.data = 0
+  e.uniforms.u_start_line.disable = false
+  e.uniforms.u_show_blocks.data = 1
+  e.uniforms.u_show_blocks.disable = false
+  session.insert(id, Text, e)
 
 proc init*(game: var RootGame, showAscii: bool, density: float) =
   # opengl

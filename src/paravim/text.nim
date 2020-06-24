@@ -166,6 +166,9 @@ proc cropLines*(instancedEntity: var ParavimTextEntity, startLine: int, endLine:
   cropInstanceUni(instancedEntity.uniforms.u_char_counts, startLine, endLine)
   instancedEntity.instanceCount = int32(j - i)
 
+proc cropLines*(instancedEntity: var ParavimTextEntity, startLine: int) =
+  cropLines(instancedEntity, startLine, instancedEntity.uniforms.u_char_counts.data.len)
+
 proc add*(instancedEntity: var ParavimTextEntity, entity: UncompiledTextEntity, font: Font, fontColor: glm.Vec4[GLfloat], text: string, parsedNodes: openArray[Node], startPos: float): float =
   let lineNum = instancedEntity.uniforms.u_char_counts.data.len - 1
   result = startPos
