@@ -343,7 +343,10 @@ let rules* =
           startColumn = int(scrollX / fontWidth)
           startLine =
             if minimapIsOverflowing:
-              int(max(scrollY, 0) / fontHeight)
+              min(
+                int(max(scrollY, 0) / fontHeight), # lines above
+                fullText.lineCount - minimapLineCount # lines below
+              )
             else:
               0
         # minimap text
@@ -367,14 +370,14 @@ let rules* =
           var bg = uncompiledRectEntity
           bg.project(float(windowWidth), float(windowHeight))
           bg.translate(float(windowWidth) - minimapWidth, 0)
-          bg.scale(minimapWidth, float(windowHeight)-fontHeight)
+          bg.scale(minimapWidth, minimapHeight)
           bg.color(bgColor)
           e.add(bg)
           var view = uncompiledRectEntity
           view.project(float(windowWidth), float(windowHeight))
           view.translate(float(windowWidth) - minimapWidth, 0)
           view.translate(0f, scrollY / minimapScale - startLine.float * minimapFontHeight)
-          view.scale(minimapWidth, float(windowHeight) / minimapScale)
+          view.scale(minimapWidth, minimapHeight / minimapScale)
           view.color(minimapViewColor)
           e.add(view)
           session.insert(id, MinimapRects, e)
