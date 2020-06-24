@@ -25,6 +25,7 @@ const
   minFontSize = 1/8
   maxFontSize = 1
   defaultFontSize = 1/4
+  minimapScale = 6f
   asciiArt* = {"smile": strutils.splitLines(staticRead("assets/ascii/smile.txt")),
                "intro": strutils.splitLines(staticRead("assets/ascii/intro.txt")),
                "cat": strutils.splitLines(staticRead("assets/ascii/cat.txt")),
@@ -258,12 +259,17 @@ let rules* =
         (Global, FontSize, fontSize)
         (id, CursorColumn, cursorColumn)
         (id, ScrollX, scrollX, then = false)
+        (id, ShowMinimap, showMinimap)
       then:
         let
           textWidth = text.monoFontWidth * fontSize
           cursorLeft = cursorColumn.float * textWidth
           cursorRight = cursorLeft + textWidth
-          textViewWidth = windowWidth.float
+          textViewWidth =
+            if showMinimap:
+              windowWidth.float - (windowWidth.float / minimapScale)
+            else:
+              windowWidth.float
           scrollRight = scrollX + textViewWidth
         if cursorLeft < scrollX:
           session.insert(id, ScrollTargetX, cursorLeft)
@@ -313,15 +319,15 @@ let rules* =
         (Global, FontSize, fontSize)
         (id, ScrollY, scrollY)
         (id, Text, fullText)
+        (id, ShowMinimap, showMinimap, then = false)
       then:
         var e = fullText
         const
-          miniScale = 6f
-          minSizeToShowChars = (defaultFontSize * 2) / miniScale
+          minSizeToShowChars = (defaultFontSize * 2) / minimapScale
           minChars = 30f # minimum number of chars that minimap must be able to display
         let
-          minimapFontSize = fontSize / miniScale
-          minimapWidth = float(windowWidth)/miniScale
+          minimapFontSize = fontSize / minimapScale
+          minimapWidth = float(windowWidth)/minimapScale
           minimapChars = minimapWidth/(minimapFontSize * text.monoFontWidth) # number of chars that can fit in minimap
         if minimapFontSize >= minSizeToShowChars:
           e.uniforms.u_show_blocks.data = 0
@@ -334,18 +340,26 @@ let rules* =
           fontHeight = text.monoFont.height * fontSize
           textViewHeight = windowHeight.float - fontHeight
           documentHeight = fullText.lineCount.float * fontHeight
-        session.insert(id, ShowMinimap, minimapChars >= minChars and documentHeight > textViewHeight)
+          showMinimapNew = minimapChars >= minChars and documentHeight > textViewHeight
+        if showMinimap != showMinimapNew:
+          session.insert(id, ShowMinimap, showMinimapNew)
     rule rubberBandEffectX(Fact):
       what:
         (Global, WindowWidth, windowWidth)
         (Global, FontSize, fontSize)
         (id, ScrollTargetX, scrollTargetX)
         (id, MaxCharCount, maxCharCount)
+        (id, ShowMinimap, showMinimap)
       then:
         let
           fontWidth = text.monoFontWidth * fontSize
           textWidth = fontWidth * maxCharCount.float
-          maxX = textWidth - windowWidth.float
+          textViewWidth =
+            if showMinimap:
+              windowWidth.float - (windowWidth.float / minimapScale)
+            else:
+              windowWidth.float
+          maxX = textWidth - textViewWidth
           newScrollTargetX = scrollTargetX.min(maxX).max(0)
         if newScrollTargetX != scrollTargetX:
           session.insert(id, ScrollTargetX, newScrollTargetX)
@@ -661,8 +675,18 @@ proc tick*(game: RootGame, clear: bool): bool =
         e.scale(fontSize, fontSize)
         render(game, e)
     # mini map
-    block:
-      if currentBuffer.showMinimap and currentBuffer.minimapText.instanceCount > 0:
+    if currentBuffer.showMinimap and currentBuffer.minimapText.instanceCount > 0:
+      block:
+        var e = deepCopy(rectsEntity)
+        let minimapWidth = float(windowWidth)/minimapScale
+        var e2 = uncompiledRectEntity
+        e2.project(float(windowWidth), float(windowHeight))
+        e2.translate(float(windowWidth) - minimapWidth, 0)
+        e2.scale(minimapWidth, float(windowWidth))
+        e2.color(bgColor)
+        e.add(e2)
+        render(game, e)
+      block:
         var e = currentBuffer.minimapText
         render(game, e)
 

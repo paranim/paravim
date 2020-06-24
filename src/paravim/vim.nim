@@ -178,6 +178,7 @@ proc onBufEnter(buf: buf_T) =
     session.insert(sessionId, VimVisualRange, (0, 0, 0, 0))
     session.insert(sessionId, VimVisualBlockMode, false)
     session.insert(sessionId, VimSearchRanges, @[])
+    session.insert(sessionId, ShowMinimap, false)
     insertTextEntity(sessionId, lines, parsed)
 
 proc onBufDelete(buf: buf_T) =
