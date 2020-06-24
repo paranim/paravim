@@ -77,20 +77,17 @@ proc parse*(node: TSNode, nodes: var Nodes) =
         endLine = endPoint.row.int
         startCol = if lineNum == startLine: startPoint.column.int else: 0
         endCol = if lineNum == endLine: endPoint.column.int else: -1
-      if nodes[].len-1 < lineNum:
-        for _ in nodes[].len-1 .. lineNum:
-          nodes[].add(newSeq[Node]())
       nodes[][lineNum].add((kind, startCol, endCol))
   else:
     for i in 0 ..< ts_node_child_count(node):
       let child = ts_node_child(node, i)
       parse(child, nodes)
 
-proc parse*(tree: pointer): Nodes =
+proc parse*(tree: pointer, lineCount: int): Nodes =
   if tree != nil:
     let node = ts_tree_root_node(tree)
     new(result)
-    result[] = @[newSeq[Node]()]
+    result[] = newSeq[seq[Node]](lineCount)
     parse(node, result)
 
 proc editTree*(tree: pointer, parser: pointer, newLines: ref seq[string]): pointer =
