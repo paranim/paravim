@@ -54,7 +54,7 @@ type
     ScrollSpeedX, ScrollSpeedY,
     MaxCharCount, LineCount,
     Tree, Parser,
-    Text, CroppedText, MinimapText,
+    Text, CroppedText, MinimapText, MinimapRects,
     ShowMinimap,
   RefStrings = ref seq[string]
   RangeTuples = seq[RangeTuple]
@@ -100,6 +100,7 @@ schema Fact(Id, Attr):
   Text: ParavimTextEntity
   CroppedText: ParavimTextEntity
   MinimapText: ParavimTextEntity
+  MinimapRects: InstancedTwoDEntity
   ShowMinimap: bool
 
 var
@@ -156,6 +157,7 @@ let rules* =
         (id, Text, text)
         (id, CroppedText, croppedText)
         (id, MinimapText, minimapText)
+        (id, MinimapRects, minimapRects)
         (id, ShowMinimap, showMinimap)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
@@ -175,6 +177,7 @@ let rules* =
         (id, Text, text)
         (id, CroppedText, croppedText)
         (id, MinimapText, minimapText)
+        (id, MinimapRects, minimapRects)
         (id, ShowMinimap, showMinimap)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
@@ -201,6 +204,7 @@ let rules* =
         (id, Text, text)
         (id, CroppedText, croppedText)
         (id, MinimapText, minimapText)
+        (id, MinimapRects, minimapRects)
         (id, ShowMinimap, showMinimap)
         (id, VimVisualRange, visualRange)
         (id, VimVisualBlockMode, visualBlockMode)
@@ -225,6 +229,7 @@ let rules* =
         session.retract(id, Text, text)
         session.retract(id, CroppedText, croppedText)
         session.retract(id, MinimapText, minimapText)
+        session.retract(id, MinimapRects, minimapRects)
         session.retract(id, ShowMinimap, showMinimap)
         session.retract(id, VimVisualRange, visualRange)
         session.retract(id, VimVisualBlockMode, visualBlockMode)
@@ -319,7 +324,6 @@ let rules* =
         (id, Text, fullText)
         (id, ShowMinimap, showMinimap, then = false)
       then:
-        var e = fullText
         const
           minSizeToShowChars = (defaultFontSize * 2) / minimapScale
           minChars = 30 # minimum number of chars that minimap must be able to display
@@ -335,16 +339,46 @@ let rules* =
           # number of chars that can fit in minimap
           minimapChars = int(minimapWidth/(minimapFontSize * text.monoFontWidth))
           minimapLineCount = min(int(minimapHeight / minimapFontHeight), maxLines)
+          minimapIsOverflowing = fullText.lineCount > minimapLineCount
           startColumn = int(scrollX / fontWidth)
-        if fullText.lineCount > minimapLineCount:
-          text.cropLines(e, 0, minimapLineCount)
-        text.updateUniforms(e, 0, startColumn, minimapFontSize < minSizeToShowChars)
-        e.project(float(windowWidth), float(windowHeight))
-        e.translate(float(windowWidth) - minimapWidth, 0f)
-        if startColumn > 0:
-          e.translate(-(startColumn.float * minimapFontWidth), 0f)
-        e.scale(minimapFontSize, minimapFontSize)
-        session.insert(id, MinimapText, e)
+          startLine =
+            if minimapIsOverflowing:
+              int(max(scrollY, 0) / fontHeight)
+            else:
+              0
+        # minimap text
+        block:
+          var e = fullText
+          if minimapIsOverflowing:
+            let endLine = min(minimapLineCount+startLine, fullText.lineCount)
+            text.cropLines(e, startLine, endLine)
+          text.updateUniforms(e, startLine, startColumn, minimapFontSize < minSizeToShowChars)
+          e.project(float(windowWidth), float(windowHeight))
+          e.translate(float(windowWidth) - minimapWidth, 0f)
+          if startColumn > 0:
+            e.translate(-(startColumn.float * minimapFontWidth), 0f)
+          if startLine > 0:
+            e.translate(0f, -(startLine.float * minimapFontHeight))
+          e.scale(minimapFontSize, minimapFontSize)
+          session.insert(id, MinimapText, e)
+        # minimap rects
+        block:
+          var e = deepCopy(rectsEntity)
+          var bg = uncompiledRectEntity
+          bg.project(float(windowWidth), float(windowHeight))
+          bg.translate(float(windowWidth) - minimapWidth, 0)
+          bg.scale(minimapWidth, float(windowHeight)-fontHeight)
+          bg.color(bgColor)
+          e.add(bg)
+          var view = uncompiledRectEntity
+          view.project(float(windowWidth), float(windowHeight))
+          view.translate(float(windowWidth) - minimapWidth, 0)
+          view.translate(0f, scrollY / minimapScale - startLine.float * minimapFontHeight)
+          view.scale(minimapWidth, float(windowHeight) / minimapScale)
+          view.color(minimapViewColor)
+          e.add(view)
+          session.insert(id, MinimapRects, e)
+        # show minimap
         let
           textViewHeight = windowHeight.float - fontHeight
           documentHeight = fullText.lineCount.float * fontHeight
@@ -676,21 +710,7 @@ proc tick*(game: RootGame, clear: bool): bool =
     # mini map
     if currentBuffer.showMinimap and currentBuffer.minimapText.instanceCount > 0:
       block:
-        var e = deepCopy(rectsEntity)
-        let minimapWidth = float(windowWidth) / minimapScale
-        var bg = uncompiledRectEntity
-        bg.project(float(windowWidth), float(windowHeight))
-        bg.translate(float(windowWidth) - minimapWidth, 0)
-        bg.scale(minimapWidth, float(windowHeight)-fontHeight)
-        bg.color(bgColor)
-        e.add(bg)
-        var view = uncompiledRectEntity
-        view.project(float(windowWidth), float(windowHeight))
-        view.translate(float(windowWidth) - minimapWidth, 0)
-        view.translate(0f, currentBuffer.scrollY / minimapScale)
-        view.scale(minimapWidth, float(windowHeight) / minimapScale)
-        view.color(minimapViewColor)
-        e.add(view)
+        var e = currentBuffer.minimapRects
         render(game, e)
       block:
         var e = currentBuffer.minimapText
