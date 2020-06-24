@@ -22,7 +22,8 @@ type
     u_char_counts: Uniform[seq[GLint]],
     u_start_line: Uniform[GLint],
     u_font_height: Uniform[GLfloat],
-    u_alpha: Uniform[GLfloat]
+    u_alpha: Uniform[GLfloat],
+    u_show_blocks: Uniform[GLuint],
   ]
   ParavimTextEntityAttributes = tuple[
     a_position: Attribute[GLfloat],
@@ -43,6 +44,7 @@ proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledP
   result.uniforms.u_char_counts.disable = true
   result.uniforms.u_font_height.data = font.height
   result.uniforms.u_alpha.data = 1.0
+  result.uniforms.u_show_blocks.data = 0
   result.attributes.a_translate_matrix = Attribute[GLfloat](disable: true, divisor: 1, size: 3, iter: 3)
   new(result.attributes.a_translate_matrix.data)
   result.attributes.a_scale_matrix = Attribute[GLfloat](disable: true, divisor: 1, size: 3, iter: 3)

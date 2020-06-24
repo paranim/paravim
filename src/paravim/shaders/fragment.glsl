@@ -2,11 +2,17 @@
 precision mediump float;
 uniform sampler2D u_image;
 uniform float u_alpha;
+uniform bool u_show_blocks;
 in vec2 v_tex_coord;
 in vec4 v_color;
 out vec4 o_color;
 void main()
 {
+  if (u_show_blocks) {
+    o_color = v_color;
+    return;
+  }
+
   // get the color from the attributes
   vec4 input_color = v_color;
   // set its alpha color if necessary

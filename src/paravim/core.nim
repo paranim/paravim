@@ -6,7 +6,7 @@ from paranim/math as pmath import translate
 import pararules
 from text import ParavimTextEntity
 from paratext/gl/text as ptext import nil
-from buffers import RangeTuple
+from buffers import RangeTuple, BufferUpdateTuple
 import colors
 import sets
 from math import `mod`
@@ -300,6 +300,8 @@ let rules* =
           discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
         e.uniforms.u_start_line.data = linesToSkip.int32
         e.uniforms.u_start_line.disable = false
+        e.uniforms.u_show_blocks.data = 0
+        e.uniforms.u_show_blocks.disable = false
         session.insert(id, CroppedText, e)
     rule rubberBandEffectX(Fact):
       what:
@@ -441,7 +443,12 @@ proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.NodeTable
   e.parsedNodes = parsed
   e.uniforms.u_start_line.data = 0
   e.uniforms.u_start_line.disable = false
+  e.uniforms.u_show_blocks.data = 1
+  e.uniforms.u_show_blocks.disable = false
   session.insert(id, Text, e)
+
+proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.NodeTable, textEntity: ParavimTextEntity, bu: BufferUpdateTuple) =
+  insertTextEntity(id, lines, parsed)
 
 proc init*(game: var RootGame, showAscii: bool, density: float) =
   # opengl
@@ -503,6 +510,8 @@ proc tick*(game: RootGame, clear: bool): bool =
     var e = deepCopy(monoEntity)
     e.uniforms.u_start_line.data = 0
     e.uniforms.u_start_line.disable = false
+    e.uniforms.u_show_blocks.data = 0
+    e.uniforms.u_show_blocks.disable = false
     for line in asciiArt[ascii]:
       discard text.addLine(e, baseMonoEntity, text.monoFont, asciiColor, line, [])
     e.project(float(windowWidth), float(windowHeight))
@@ -604,6 +613,8 @@ proc tick*(game: RootGame, clear: bool): bool =
       var e = deepCopy(monoEntity)
       e.uniforms.u_start_line.data = 0
       e.uniforms.u_start_line.disable = false
+      e.uniforms.u_show_blocks.data = 0
+      e.uniforms.u_show_blocks.disable = false
       let endPos = text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText, [])
       if vim.commandCompletion != "":
         let
@@ -619,6 +630,8 @@ proc tick*(game: RootGame, clear: bool): bool =
     var e = deepCopy(monoEntity)
     e.uniforms.u_start_line.data = 0
     e.uniforms.u_start_line.disable = false
+    e.uniforms.u_show_blocks.data = 0
+    e.uniforms.u_show_blocks.disable = false
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, vim.message, [])
     e.project(float(windowWidth), float(windowHeight))
     e.translate(0f, float(windowHeight) - fontHeight)

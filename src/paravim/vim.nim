@@ -222,7 +222,7 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
     parsed = tree_sitter.parse(newTree)
   session.insert(id, Tree, newTree)
   session.insert(id, ParsedNodes, parsed)
-  insertTextEntity(id, newLines, parsed)
+  updateTextEntity(id, newLines, parsed, buffer.text, bu)
 
 proc onStopSearch() {.cdecl.} =
   session.insert(Global, VimShowSearch, false)

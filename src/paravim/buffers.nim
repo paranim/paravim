@@ -3,7 +3,7 @@ from text import nil
 from math import nil
 
 type
-  BufferUpdateTuple = tuple[lines: seq[string], firstLine: int, lineCountChange: int]
+  BufferUpdateTuple* = tuple[lines: seq[string], firstLine: int, lineCountChange: int]
   RangeTuple* = tuple[startLine: int, startColumn: int, endLine: int, endColumn: int]
   RectTuple* = tuple[left: float, top: float, width: float, height: float]
 
