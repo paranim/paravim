@@ -22,6 +22,7 @@ type
     u_image: Uniform[Texture[GLubyte]],
     u_char_counts: Uniform[seq[GLint]],
     u_start_line: Uniform[GLint],
+    u_start_column: Uniform[GLint],
     u_font_height: Uniform[GLfloat],
     u_alpha: Uniform[GLfloat],
     u_show_blocks: Uniform[GLuint],
@@ -44,6 +45,7 @@ proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledP
   result.uniforms.u_matrix = entity.uniforms.u_matrix
   result.uniforms.u_image = entity.uniforms.u_image
   result.uniforms.u_char_counts.disable = true
+  result.uniforms.u_start_column.data = 0
   result.uniforms.u_font_height.data = font.height
   result.uniforms.u_alpha.data = 1.0
   result.uniforms.u_show_blocks.data = 0
@@ -209,3 +211,11 @@ proc updateColors*(instancedEntity: var ParavimTextEntity, parsedNodes: tree_sit
       let color = getColor(colNum, parsedNodes[][lineNum], fontColor)
       for x in 0 .. 3:
         instancedEntity.attributes.a_color.data[].add(color[x])
+
+proc updateUniforms*(e: var ParavimTextEntity, startLine: int, startColumn: int, showBlocks: bool) =
+  e.uniforms.u_start_line.data = startLine.int32
+  e.uniforms.u_start_line.disable = false
+  e.uniforms.u_start_column.data = startColumn.int32
+  e.uniforms.u_start_column.disable = false
+  e.uniforms.u_show_blocks.data = if showBlocks: 1 else: 0
+  e.uniforms.u_show_blocks.disable = false

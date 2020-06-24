@@ -2,6 +2,7 @@
 uniform mat3 u_matrix;
 uniform int[1000] u_char_counts;
 uniform int u_start_line;
+uniform int u_start_column;
 uniform float u_font_height;
 in vec2 a_position;
 in vec4 a_color;
@@ -19,6 +20,7 @@ void main()
     total_char_count += u_char_counts[i];
     if (total_char_count > gl_InstanceID)
     {
+      total_char_count -= u_char_counts[i];
       break;
     }
     else
@@ -28,6 +30,12 @@ void main()
   }
   mat3 translate_matrix = a_translate_matrix;
   translate_matrix[2][1] += u_font_height * (u_start_line + current_line);
+  int current_column = gl_InstanceID - total_char_count;
+  if (u_start_column > current_column)
+  {
+    v_color = vec4(0.0, 0.0, 0.0, 0.0);
+    return;
+  }
   gl_Position = vec4((u_matrix * translate_matrix * a_scale_matrix * vec3(a_position, 1)).xy, 0, 1);
   v_tex_coord = (a_texture_matrix * vec3(a_position, 1)).xy;
   v_color = a_color;

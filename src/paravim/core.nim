@@ -307,16 +307,14 @@ let rules* =
           linesToSkip = min(int(scrollY / fontHeight), e.lineCount).max(0)
           linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, e.lineCount)
         text.cropLines(e, linesToSkip, linesToCrop)
-        e.uniforms.u_start_line.data = linesToSkip.int32
-        e.uniforms.u_start_line.disable = false
-        e.uniforms.u_show_blocks.data = 0
-        e.uniforms.u_show_blocks.disable = false
+        text.updateUniforms(e, linesToSkip, 0, false)
         session.insert(id, CroppedText, e)
     rule updateMinimapText(Fact):
       what:
         (Global, WindowWidth, windowWidth)
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
+        (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
         (id, Text, fullText)
         (id, ShowMinimap, showMinimap, then = false)
@@ -326,20 +324,23 @@ let rules* =
           minSizeToShowChars = (defaultFontSize * 2) / minimapScale
           minChars = 30f # minimum number of chars that minimap must be able to display
         let
+          fontWidth = text.monoFontWidth * fontSize
           fontHeight = text.monoFont.height * fontSize
           minimapFontSize = fontSize / minimapScale
+          minimapFontWidth = text.monoFontWidth * minimapFontSize
           minimapFontHeight = text.monoFont.height * minimapFontSize
           minimapHeight = float(windowHeight) - fontHeight
           minimapWidth = float(windowWidth) / minimapScale
           minimapChars = minimapWidth/(minimapFontSize * text.monoFontWidth) # number of chars that can fit in minimap
           minimapLineCount = int(minimapHeight / minimapFontHeight)
+          startColumn = int(scrollX / fontWidth)
         if fullText.lineCount > minimapLineCount:
           text.cropLines(e, 0, minimapLineCount)
-        if minimapFontSize >= minSizeToShowChars:
-          e.uniforms.u_show_blocks.data = 0
-          e.uniforms.u_show_blocks.disable = false
+        text.updateUniforms(e, 0, startColumn, minimapFontSize < minSizeToShowChars)
         e.project(float(windowWidth), float(windowHeight))
         e.translate(float(windowWidth) - minimapWidth, 0f)
+        if startColumn > 0:
+          e.translate(-(startColumn.float * minimapFontWidth), 0f)
         e.scale(minimapFontSize, minimapFontSize)
         session.insert(id, MinimapText, e)
         let
@@ -493,10 +494,7 @@ proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes) =
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
   e.parsedNodes = parsed
   e.lineCount = lines[].len
-  e.uniforms.u_start_line.data = 0
-  e.uniforms.u_start_line.disable = false
-  e.uniforms.u_show_blocks.data = 1
-  e.uniforms.u_show_blocks.disable = false
+  text.updateUniforms(e, 0, 0, false)
   session.insert(id, Text, e)
 
 proc parsedNodesChanged(parsedNodes: tree_sitter.Nodes, textEntity: ParavimTextEntity, startLine: int, oldEndLine: int, newEndLine: int): bool =
@@ -549,10 +547,7 @@ proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, te
   if e.uniforms.u_char_counts.data.len == 0:
     e.uniforms.u_char_counts.data = @[0.int32]
     e.uniforms.u_char_counts.disable = false
-  e.uniforms.u_start_line.data = 0
-  e.uniforms.u_start_line.disable = false
-  e.uniforms.u_show_blocks.data = 1
-  e.uniforms.u_show_blocks.disable = false
+  text.updateUniforms(e, 0, 0, false)
   session.insert(id, Text, e)
 
 proc init*(game: var RootGame, showAscii: bool, density: float) =
@@ -612,10 +607,7 @@ proc tick*(game: RootGame, clear: bool): bool =
 
   if ascii != "":
     var e = deepCopy(monoEntity)
-    e.uniforms.u_start_line.data = 0
-    e.uniforms.u_start_line.disable = false
-    e.uniforms.u_show_blocks.data = 0
-    e.uniforms.u_show_blocks.disable = false
+    text.updateUniforms(e, 0, 0, false)
     for line in asciiArt[ascii]:
       discard text.addLine(e, baseMonoEntity, text.monoFont, asciiColor, line, [])
     e.project(float(windowWidth), float(windowHeight))
@@ -722,10 +714,7 @@ proc tick*(game: RootGame, clear: bool): bool =
     # command line text
     block:
       var e = deepCopy(monoEntity)
-      e.uniforms.u_start_line.data = 0
-      e.uniforms.u_start_line.disable = false
-      e.uniforms.u_show_blocks.data = 0
-      e.uniforms.u_show_blocks.disable = false
+      text.updateUniforms(e, 0, 0, false)
       let endPos = text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText, [])
       if vim.commandCompletion != "":
         let
@@ -739,10 +728,7 @@ proc tick*(game: RootGame, clear: bool): bool =
       render(game, e)
   elif vim.message != "":
     var e = deepCopy(monoEntity)
-    e.uniforms.u_start_line.data = 0
-    e.uniforms.u_start_line.disable = false
-    e.uniforms.u_show_blocks.data = 0
-    e.uniforms.u_show_blocks.disable = false
+    text.updateUniforms(e, 0, 0, false)
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, vim.message, [])
     e.project(float(windowWidth), float(windowHeight))
     e.translate(0f, float(windowHeight) - fontHeight)
