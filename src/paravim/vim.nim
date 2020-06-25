@@ -206,6 +206,8 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   let id = vimBufferGetId(bufferUpdate.buf).int
   # get current buffer
   let index = pararules.find(session, rules.getBuffer, bufferId = id)
+  if index == -1:
+    return
   let buffer = pararules.get(session, rules.getBuffer, index) # will throw if buffer isn't in session
   # update the lines
   let bu = (lines, firstLine.int, bufferUpdate.xtra.int)
