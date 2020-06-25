@@ -9,7 +9,7 @@ import unittest
 import paravim/libvim
 from paravim/vim import nil
 
-vim.init(@[], nil, nil)
+vim.init(nil, nil)
 
 test "set the tab size":
   vimOptionSetTabSize(2)
@@ -31,6 +31,5 @@ test "delete all lines":
   vim.onInput("p")
   check vimBufferGetLine(buf, 1) == "" # first line is blank
   check vimBufferGetLine(buf, 2) == "Hello, world!"
-  echo "undoing"
   vim.onInput("u")
   vimExecute("bd!")

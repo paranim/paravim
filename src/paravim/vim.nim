@@ -174,12 +174,13 @@ proc onBufEnter(buf: buf_T) =
     let (tree, parser) = tree_sitter.init(pathStr, lines[])
     session.insert(sessionId, Tree, tree)
     session.insert(sessionId, Parser, parser)
-    let parsed = tree_sitter.parse(tree, lines[].len)
     session.insert(sessionId, VimVisualRange, (0, 0, 0, 0))
     session.insert(sessionId, VimVisualBlockMode, false)
     session.insert(sessionId, VimSearchRanges, @[])
     session.insert(sessionId, ShowMinimap, false)
-    insertTextEntity(sessionId, lines, parsed)
+    when not defined(paravimtest):
+      let parsed = tree_sitter.parse(tree, lines[].len)
+      insertTextEntity(sessionId, lines, parsed)
 
 proc onBufDelete(buf: buf_T) =
   let bufferId = vimBufferGetId(buf)
