@@ -93,7 +93,7 @@ proc init*(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
       content = strutils.join(lines, "\n")
     window.setClipboardString(content)
 
-  vim.init(params, onQuit, onYank)
+  vim.init(onQuit, onYank)
 
   var width, height: int32
   w.getFramebufferSize(width.addr, height.addr)
@@ -106,6 +106,9 @@ proc init*(game: var gl.RootGame, w: GLFWWindow, params: seq[string]) =
   core.init(game, params.len == 0, density)
   core.insert(core.session, core.Global, core.WindowTitleCallback, proc (title: string) = w.setWindowTitle(title))
   totalTime = glfwGetTime()
+
+  for fname in params:
+    discard libvim.vimBufferOpen(fname, 1, 0)
 
 proc init*(game: var gl.RootGame, w: GLFWWindow) =
   init(game, w, @[])

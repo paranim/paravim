@@ -229,7 +229,7 @@ proc onStopSearch() {.cdecl.} =
 proc onMessage(title: ptr char_u; msg: ptr char_u; priority: msgPriority_T) {.cdecl.} =
   session.insert(Global, VimMessage, $ msg)
 
-proc init*(filesToOpen: seq[string], onQuit: QuitCallback, onYank: YankCallback) =
+proc init*(onQuit: QuitCallback, onYank: YankCallback) =
   vimSetAutoCommandCallback(onAutoCommand)
   vimSetBufferUpdateCallback(onBufferUpdate)
   vimSetQuitCallback(onQuit)
@@ -258,6 +258,3 @@ proc init*(filesToOpen: seq[string], onQuit: QuitCallback, onYank: YankCallback)
   session.insert(Global, VimCommandCompletion, "")
   session.insert(Global, VimMessage, "")
   session.insert(Global, VimShowSearch, false)
-
-  for fname in filesToOpen:
-    discard vimBufferOpen(fname, 1, 0)
