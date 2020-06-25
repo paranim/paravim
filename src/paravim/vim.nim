@@ -215,13 +215,13 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   # see test: delete all lines
   if newLines[].len == 0:
     newLines[] = @[""]
-  session.insert(id, Lines, newLines)
+  session.insert(buffer.id, Lines, newLines)
   # re-parse if necessary
   let
     newTree = tree_sitter.editTree(buffer.tree, buffer.parser, newLines)
     parsed = tree_sitter.parse(newTree, newLines[].len)
-  session.insert(id, Tree, newTree)
-  updateTextEntity(id, newLines, parsed, buffer.text, bu)
+  session.insert(buffer.id, Tree, newTree)
+  updateTextEntity(buffer.id, newLines, parsed, buffer.text, bu)
 
 proc onStopSearch() {.cdecl.} =
   session.insert(Global, VimShowSearch, false)
