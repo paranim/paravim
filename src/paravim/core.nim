@@ -521,49 +521,30 @@ proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes) =
   text.updateUniforms(e, 0, 0, false)
   session.insert(id, Text, e)
 
-proc parsedNodesChanged(parsedNodes: tree_sitter.Nodes, textEntity: ParavimTextEntity, startLine: int, oldEndLine: int, newEndLine: int): bool =
-  if parsedNodes == nil or textEntity.parsedNodes == nil:
-    return false
-  let
-    newPrevLines = parsedNodes[][0..<startLine]
-    oldPrevLines = textEntity.parsedNodes[][0..<startLine]
-  if newPrevLines != oldPrevLines:
-    return true
-  let
-    newLength = parsedNodes[].len
-    oldLength = textEntity.parsedNodes[].len
-    newNextLines = parsedNodes[][newEndLine..<newLength]
-    oldNextLines = textEntity.parsedNodes[][oldEndLine..<oldLength]
-  if newNextLines != oldNextLines:
-    return true
-  false
-
 proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, textEntity: ParavimTextEntity, bu: BufferUpdateTuple) =
   var
     e = textEntity
     nextEntity = textEntity
     startLine = bu.firstLine
-    oldEndLine = startLine + bu.lines.len
-    newEndLine = oldEndLine
   text.cropLines(e, 0, startLine)
   if bu.lineCountChange == 0:
-    text.cropLines(nextEntity, oldEndLine, lines[].len)
+    let endLine = startLine + bu.lines.len
+    text.cropLines(nextEntity, endLine, lines[].len)
   else:
     let linesToRemove =
       if bu.lineCountChange < 0:
         (-1 * bu.lineCountChange) + bu.lines.len
       else:
         bu.lines.len - bu.lineCountChange
-    oldEndLine = startLine + linesToRemove
-    text.cropLines(nextEntity, oldEndLine)
+    let endLine = startLine + linesToRemove
+    text.cropLines(nextEntity, endLine)
   for i in 0 ..< bu.lines.len:
     let
       lineNum = bu.firstLine + i
       parsedLine = if parsed != nil: parsed[lineNum] else: @[]
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, bu.lines[i], parsedLine)
   text.add(e, nextEntity)
-  if parsedNodesChanged(parsed, e, startLine, oldEndLine, newEndLine):
-    text.updateColors(e, parsed, lines, textColor)
+  text.updateColors(e, parsed, lines, textColor)
   e.parsedNodes = parsed
   e.lineCount = lines[].len
   # u_char_counts must not be empty
