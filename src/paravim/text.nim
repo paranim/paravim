@@ -35,7 +35,6 @@ type
     a_color: Attribute[GLfloat]
   ]
   ParavimTextEntity* = object of InstancedEntity[ParavimTextEntityUniforms, ParavimTextEntityAttributes]
-    parsedNodes*: tree_sitter.Nodes
     lineCount*: int
   UncompiledParavimTextEntity = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
 

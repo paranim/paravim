@@ -516,7 +516,6 @@ proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes) =
   for i in 0 ..< lines[].len:
     let parsedLine = if parsed != nil: parsed[i] else: @[]
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
-  e.parsedNodes = parsed
   e.lineCount = lines[].len
   text.updateUniforms(e, 0, 0, false)
   session.insert(id, Text, e)
@@ -545,7 +544,6 @@ proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, te
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, bu.lines[i], parsedLine)
   text.add(e, nextEntity)
   text.updateColors(e, parsed, lines, textColor)
-  e.parsedNodes = parsed
   e.lineCount = lines[].len
   # u_char_counts must not be empty
   # because there is always at least one line
