@@ -1,6 +1,6 @@
 #version 330
 uniform mat3 u_matrix;
-uniform int[1000] u_char_counts;
+uniform int u_char_counts[1000];
 uniform int u_start_line;
 uniform int u_start_column;
 uniform float u_font_height;
