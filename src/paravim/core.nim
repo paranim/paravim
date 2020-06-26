@@ -543,7 +543,8 @@ proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, te
       parsedLine = if parsed != nil: parsed[lineNum] else: @[]
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, bu.lines[i], parsedLine)
   text.add(e, nextEntity)
-  text.updateColors(e, parsed, lines, textColor)
+  if parsed != nil:
+    text.updateColors(e, parsed, lines, textColor)
   e.lineCount = lines[].len
   # u_char_counts must not be empty
   # because there is always at least one line
