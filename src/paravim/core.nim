@@ -624,12 +624,10 @@ proc tick*(game: RootGame, clear: bool): bool =
         render(game, e)
     # mini map
     if currentBuffer.showMinimap and currentBuffer.minimapText.instanceCount > 0:
-      block:
-        var e = currentBuffer.minimapRects
-        render(game, e)
-      block:
-        var e = currentBuffer.minimapText
-        render(game, e)
+      var rects = currentBuffer.minimapRects
+      render(game, rects)
+      var text = currentBuffer.minimapText
+      render(game, text)
 
   # command line background
   block:
