@@ -19,13 +19,13 @@ import times
 from tree_sitter import Nodes
 from scroll import nil
 from sequtils import nil
+from minimap import nil
 
 const
   fontSizeStep = 1/16
   minFontSize = 1/8
   maxFontSize = 1
   defaultFontSize = 1/4
-  minimapScale = 6f
   asciiArt* = {"smile": strutils.splitLines(staticRead("assets/ascii/smile.txt")),
                "intro": strutils.splitLines(staticRead("assets/ascii/intro.txt")),
                "cat": strutils.splitLines(staticRead("assets/ascii/cat.txt")),
@@ -257,7 +257,7 @@ let rules* =
           cursorRight = cursorLeft + textWidth
           textViewWidth =
             if showMinimap:
-              windowWidth.float - (windowWidth.float / minimapScale)
+              windowWidth.float - (windowWidth.float / minimap.minimapScale)
             else:
               windowWidth.float
           scrollRight = scrollX + textViewWidth
@@ -309,70 +309,17 @@ let rules* =
         (id, Text, fullText)
         (id, ShowMinimap, showMinimap, then = false)
       then:
-        const
-          minSizeToShowChars = (defaultFontSize * 2) / minimapScale
-          minChars = 30 # minimum number of chars that minimap must be able to display
-          maxLines = 1000 # u_char_counts can only hold this many
-        let
-          fontWidth = text.monoFontWidth * fontSize
-          fontHeight = text.monoFont.height * fontSize
-          minimapFontSize = fontSize / minimapScale
-          minimapFontWidth = text.monoFontWidth * minimapFontSize
-          minimapFontHeight = text.monoFont.height * minimapFontSize
-          minimapHeight = float(windowHeight) - fontHeight
-          minimapWidth = float(windowWidth) / minimapScale
-          # number of chars that can fit in minimap
-          minimapChars = int(minimapWidth / minimapFontWidth)
-          minimapLineCount = min(int(minimapHeight / minimapFontHeight), maxLines)
-          minimapIsOverflowing = fullText.lineCount > minimapLineCount
-          startColumn = int(scrollX / fontWidth)
-          startLine =
-            if minimapIsOverflowing:
-              min(
-                int(max(scrollY, 0) / fontHeight), # lines above
-                fullText.lineCount - minimapLineCount # lines below
-              )
-            else:
-              0
-        # minimap text
-        block:
-          var e = fullText
-          if minimapIsOverflowing:
-            let endLine = min(minimapLineCount+startLine, fullText.lineCount)
-            text.cropLines(e, startLine, endLine)
-          text.updateUniforms(e, startLine, startColumn, minimapFontSize < minSizeToShowChars)
-          e.project(float(windowWidth), float(windowHeight))
-          e.translate(float(windowWidth) - minimapWidth, 0f)
-          if startColumn > 0:
-            e.translate(-(startColumn.float * minimapFontWidth), 0f)
-          if startLine > 0:
-            e.translate(0f, -(startLine.float * minimapFontHeight))
-          e.scale(minimapFontSize, minimapFontSize)
-          session.insert(id, MinimapText, e)
-        # minimap rects
-        block:
-          var e = deepCopy(rectsEntity)
-          var bg = uncompiledRectEntity
-          bg.project(float(windowWidth), float(windowHeight))
-          bg.translate(float(windowWidth) - minimapWidth, 0)
-          bg.scale(minimapWidth, minimapHeight)
-          bg.color(bgColor)
-          e.add(bg)
-          var view = uncompiledRectEntity
-          view.project(float(windowWidth), float(windowHeight))
-          view.translate(float(windowWidth) - minimapWidth, 0)
-          view.translate(0f, scrollY / minimapScale - startLine.float * minimapFontHeight)
-          view.scale(minimapWidth, minimapHeight / minimapScale)
-          view.color(minimapViewColor)
-          e.add(view)
-          session.insert(id, MinimapRects, e)
-        # show minimap
-        let
-          textViewHeight = windowHeight.float - fontHeight
-          visibleLines = int(textViewHeight / fontHeight)
-          showMinimapNew = minimapChars >= minChars and fullText.lineCount > visibleLines
-        if showMinimap != showMinimapNew:
-          session.insert(id, ShowMinimap, showMinimapNew)
+        let (text, rects, show) =
+          minimap.initMinimap(
+            fullText, rectsEntity, uncompiledRectEntity,
+            windowWidth, windowHeight,
+            fontSize, defaultFontSize,
+            scrollX, scrollY
+          )
+        session.insert(id, MinimapText, text)
+        session.insert(id, MinimapRects, rects)
+        if show != showMinimap:
+          session.insert(id, ShowMinimap, show)
     rule rubberBandEffectX(Fact):
       what:
         (Global, WindowWidth, windowWidth)
@@ -386,7 +333,7 @@ let rules* =
           textWidth = fontWidth * maxCharCount.float
           textViewWidth =
             if showMinimap:
-              windowWidth.float - (windowWidth.float / minimapScale)
+              windowWidth.float - (windowWidth.float / minimap.minimapScale)
             else:
               windowWidth.float
           maxX = textWidth - textViewWidth
