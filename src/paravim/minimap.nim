@@ -28,7 +28,7 @@ proc initMinimap*(
     minimapFontSize = fontSize / minimapScale
     minimapFontWidth = text.monoFontWidth * minimapFontSize
     minimapFontHeight = text.monoFont.height * minimapFontSize
-    minimapHeight = float(windowHeight) - fontHeight
+    minimapHeight = max(0.0, float(windowHeight) - fontHeight)
     minimapWidth = float(windowWidth) / minimapScale
     # number of chars that can fit in minimap
     minimapChars = int(minimapWidth / minimapFontWidth)
