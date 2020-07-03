@@ -54,6 +54,9 @@ proc keyCallback*(window: GLFWWindow, key: int32, scancode: int32,
         vim.onInput("<C-" & (if isShift: "S-" else: "") & glfwToVimChars[key] & ">")
     elif glfwToVimSpecials.hasKey(key):
       vim.onInput("<" & glfwToVimSpecials[key] & ">")
+  elif action == GLFW_REPEAT:
+    if glfwToVimSpecials.hasKey(key):
+      vim.onInput("<" & glfwToVimSpecials[key] & ">")
 
 proc charCallback*(window: GLFWWindow, codepoint: uint32) {.cdecl.} =
   vim.onInput($ char(codepoint))
