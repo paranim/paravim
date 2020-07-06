@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.15.1"
+version       = "0.16.0"
 author        = "oakes"
 description   = "A parasitic editor"
 license       = "Public Domain"
