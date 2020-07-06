@@ -128,6 +128,38 @@ proc onBulkInput*(input: string) =
   vimExecute("set nopaste")
   updateAfterInput()
 
+proc onBufDelete(buf: buf_T) =
+  let bufferId = vimBufferGetId(buf)
+  let index = pararules.find(session, rules.getBuffer, bufferId = bufferId)
+  if index == -1:
+    return
+  let existingBuffer = pararules.get(session, rules.getBuffer, index)
+  tree_sitter.deleteTree(existingBuffer.tree)
+  tree_sitter.deleteParser(existingBuffer.parser)
+  let id = existingBuffer.id
+  session.retract(id, BufferId)
+  session.retract(id, Lines)
+  session.retract(id, CursorLine)
+  session.retract(id, CursorColumn)
+  session.retract(id, ScrollX)
+  session.retract(id, ScrollY)
+  session.retract(id, ScrollTargetX)
+  session.retract(id, ScrollTargetY)
+  session.retract(id, ScrollSpeedX)
+  session.retract(id, ScrollSpeedY)
+  session.retract(id, MaxCharCount)
+  session.retract(id, LineCount)
+  session.retract(id, Tree)
+  session.retract(id, Parser)
+  session.retract(id, Text)
+  session.retract(id, CroppedText)
+  session.retract(id, MinimapText)
+  session.retract(id, MinimapRects)
+  session.retract(id, ShowMinimap)
+  session.retract(id, VimVisualRange)
+  session.retract(id, VimVisualBlockMode)
+  session.retract(id, VimSearchRanges)
+
 proc onBufEnter(buf: buf_T) =
   let
     bufferId = vimBufferGetId(buf)
@@ -153,8 +185,7 @@ proc onBufEnter(buf: buf_T) =
         return
       else:
         sessionId = existingBuffer.id
-        session.insert(Global, DeleteBuffer, bufferId)
-        session.retract(Global, DeleteBuffer, bufferId)
+        onBufDelete(buf)
     else:
       sessionId = nextId
       nextId += 1
@@ -181,11 +212,6 @@ proc onBufEnter(buf: buf_T) =
     when not defined(paravimtest):
       let parsed = tree_sitter.parse(tree, lines[].len)
       insertTextEntity(sessionId, lines, parsed)
-
-proc onBufDelete(buf: buf_T) =
-  let bufferId = vimBufferGetId(buf)
-  session.insert(Global, DeleteBuffer, bufferId)
-  session.retract(Global, DeleteBuffer, bufferId)
 
 proc onAutoCommand(a1: event_T; buf: buf_T) {.cdecl.} =
   case a1:

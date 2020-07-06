@@ -46,7 +46,7 @@ type
     VimVisualRange, VimVisualBlockMode,
     VimSearchRanges, VimShowSearch,
     VimMessage,
-    AsciiArt, DeleteBuffer,
+    AsciiArt,
     BufferId, Lines, Path,
     CursorLine, CursorColumn,
     ScrollX, ScrollY,
@@ -81,7 +81,6 @@ schema Fact(Id, Attr):
   VimShowSearch: bool
   VimMessage: string
   AsciiArt: string
-  DeleteBuffer: int
   BufferId: int
   Lines: RefStrings
   Path: string
@@ -169,56 +168,6 @@ let rules* =
         (id, Text, text)
         (id, Tree, tree)
         (id, Parser, parser)
-    rule deleteBuffer(Fact):
-      what:
-        (Global, DeleteBuffer, bufferId)
-        (id, BufferId, bufferId)
-        (id, Lines, lines)
-        (id, CursorLine, cursorLine)
-        (id, CursorColumn, cursorColumn)
-        (id, ScrollX, scrollX)
-        (id, ScrollY, scrollY)
-        (id, ScrollTargetX, scrollTargetX)
-        (id, ScrollTargetY, scrollTargetY)
-        (id, ScrollSpeedX, scrollSpeedX)
-        (id, ScrollSpeedY, scrollSpeedY)
-        (id, MaxCharCount, maxCharCount)
-        (id, LineCount, lineCount)
-        (id, Tree, tree)
-        (id, Parser, parser)
-        (id, Text, text)
-        (id, CroppedText, croppedText)
-        (id, MinimapText, minimapText)
-        (id, MinimapRects, minimapRects)
-        (id, ShowMinimap, showMinimap)
-        (id, VimVisualRange, visualRange)
-        (id, VimVisualBlockMode, visualBlockMode)
-        (id, VimSearchRanges, searchRanges)
-      then:
-        session.retract(id, BufferId, bufferId)
-        session.retract(id, Lines, lines)
-        session.retract(id, CursorLine, cursorLine)
-        session.retract(id, CursorColumn, cursorColumn)
-        session.retract(id, ScrollX, scrollX)
-        session.retract(id, ScrollY, scrollY)
-        session.retract(id, ScrollTargetX, scrollTargetX)
-        session.retract(id, ScrollTargetY, scrollTargetY)
-        session.retract(id, ScrollSpeedX, scrollSpeedX)
-        session.retract(id, ScrollSpeedY, scrollSpeedY)
-        session.retract(id, MaxCharCount, maxCharCount)
-        session.retract(id, LineCount, lineCount)
-        session.retract(id, Tree, tree)
-        tree_sitter.deleteTree(tree)
-        session.retract(id, Parser, parser)
-        tree_sitter.deleteParser(parser)
-        session.retract(id, Text, text)
-        session.retract(id, CroppedText, croppedText)
-        session.retract(id, MinimapText, minimapText)
-        session.retract(id, MinimapRects, minimapRects)
-        session.retract(id, ShowMinimap, showMinimap)
-        session.retract(id, VimVisualRange, visualRange)
-        session.retract(id, VimVisualBlockMode, visualBlockMode)
-        session.retract(id, VimSearchRanges, searchRanges)
     rule resizeWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)
