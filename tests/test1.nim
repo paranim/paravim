@@ -6,30 +6,52 @@
 # To run these tests, simply execute `nimble test`.
 
 import unittest
-import paravim/libvim
+from paranim/gl import nil
+from paravim/libvim import nil
+from paravim import nil
 from paravim/vim import nil
+import nimgl/glfw
 
-vim.init(nil, nil)
+var game = gl.RootGame()
+
+proc init() =
+  doAssert glfwInit()
+
+  glfwWindowHint(GLFWContextVersionMajor, 3)
+  glfwWindowHint(GLFWContextVersionMinor, 3)
+  glfwWindowHint(GLFWOpenglForwardCompat, GLFW_TRUE) # Used for Mac
+  glfwWindowHint(GLFWOpenglProfile, GLFW_OPENGL_CORE_PROFILE)
+  glfwWindowHint(GLFWResizable, GLFW_TRUE)
+
+  let w: GLFWWindow = glfwCreateWindow(800, 600, "Paravim Test")
+  if w == nil:
+    quit(-1)
+
+  w.makeContextCurrent()
+
+  paravim.init(game, w)
+
+init()
 
 test "set the tab size":
-  vimOptionSetTabSize(2)
-  check vimOptionGetTabSize() == 2
+  libvim.vimOptionSetTabSize(2)
+  check libvim.vimOptionGetTabSize() == 2
 
 test "read a line":
-  let buf = vimBufferOpen("tests/hello.txt", 1, 0)
-  check vimBufferGetLine(buf, 1) == "Hello, world!"
-  vimExecute("bd!")
+  let buf = libvim.vimBufferOpen("tests/hello.txt", 1, 0)
+  check libvim.vimBufferGetLine(buf, 1) == "Hello, world!"
+  libvim.vimExecute("bd!")
 
 test "delete all lines":
-  let buf = vimBufferOpen("tests/hello.txt", 1, 0)
-  check vimBufferGetLine(buf, 1) == "Hello, world!"
+  let buf = libvim.vimBufferOpen("tests/hello.txt", 1, 0)
+  check libvim.vimBufferGetLine(buf, 1) == "Hello, world!"
   vim.onInput("g")
   vim.onInput("g")
   vim.onInput("d")
   vim.onInput("G")
-  check vimBufferGetLine(buf, 1) == ""
+  check libvim.vimBufferGetLine(buf, 1) == ""
   vim.onInput("p")
-  check vimBufferGetLine(buf, 1) == "" # first line is blank
-  check vimBufferGetLine(buf, 2) == "Hello, world!"
+  check libvim.vimBufferGetLine(buf, 1) == "" # first line is blank
+  check libvim.vimBufferGetLine(buf, 2) == "Hello, world!"
   vim.onInput("u")
-  vimExecute("bd!")
+  libvim.vimExecute("bd!")

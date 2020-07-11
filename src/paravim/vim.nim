@@ -209,9 +209,8 @@ proc onBufEnter(buf: buf_T) =
     session.insert(sessionId, VimVisualBlockMode, false)
     session.insert(sessionId, VimSearchRanges, @[])
     session.insert(sessionId, ShowMinimap, false)
-    when not defined(paravimtest):
-      let parsed = tree_sitter.parse(tree, lines[].len)
-      insertTextEntity(sessionId, lines, parsed)
+    let parsed = tree_sitter.parse(tree, lines[].len)
+    insertTextEntity(sessionId, lines, parsed)
 
 proc onAutoCommand(a1: event_T; buf: buf_T) {.cdecl.} =
   case a1:
