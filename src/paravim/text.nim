@@ -61,19 +61,6 @@ proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledP
   new(result.attributes.a_position.data)
   result.attributes.a_position.data[] = entity.attributes.a_position.data[]
 
-proc copy*[T: UncompiledParavimTextEntity or ParavimTextEntity](entity: T): T =
-  result = entity
-  new(result.attributes.a_translate_matrix.data)
-  result.attributes.a_translate_matrix.data[] = entity.attributes.a_translate_matrix.data[]
-  new(result.attributes.a_scale_matrix.data)
-  result.attributes.a_scale_matrix.data[] = entity.attributes.a_scale_matrix.data[]
-  new(result.attributes.a_texture_matrix.data)
-  result.attributes.a_texture_matrix.data[] = entity.attributes.a_texture_matrix.data[]
-  new(result.attributes.a_color.data)
-  result.attributes.a_color.data[] = entity.attributes.a_color.data[]
-  new(result.attributes.a_position.data)
-  result.attributes.a_position.data[] = entity.attributes.a_position.data[]
-
 proc addInstanceAttr[T](attr: var Attribute[T], uni: Uniform[Mat3x3[T]]) =
   for r in 0 .. 2:
     for c in 0 .. 2:
