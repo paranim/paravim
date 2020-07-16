@@ -408,7 +408,7 @@ proc fontInc*() =
     session.insert(Global, FontSize, newFontSize)
 
 proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes) =
-  var e = deepCopy(monoEntity)
+  var e = gl.copy(monoEntity)
   for i in 0 ..< lines[].len:
     let parsedLine = if parsed != nil: parsed[i] else: @[]
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
@@ -506,7 +506,7 @@ proc tick*(game: RootGame, clear: bool): bool =
   glViewport(0, 0, int32(windowWidth), int32(windowHeight))
 
   if ascii != "":
-    var e = deepCopy(monoEntity)
+    var e = gl.copy(monoEntity)
     text.updateUniforms(e, 0, 0, false)
     for line in asciiArt[ascii]:
       discard text.addLine(e, baseMonoEntity, text.monoFont, asciiColor, line, [])
@@ -521,7 +521,7 @@ proc tick*(game: RootGame, clear: bool): bool =
     var camera = glm.mat3f(1)
     camera.translate(currentBuffer.scrollX, currentBuffer.scrollY)
     block:
-      var e = deepCopy(rectsEntity)
+      var e = gl.copy(rectsEntity)
       # cursor
       if vim.mode != libvim.CommandLine.ord:
         var e2 = uncompiledRectEntity
@@ -604,7 +604,7 @@ proc tick*(game: RootGame, clear: bool): bool =
       render(game, e)
     # command line text
     block:
-      var e = deepCopy(monoEntity)
+      var e = gl.copy(monoEntity)
       text.updateUniforms(e, 0, 0, false)
       let endPos = text.addLine(e, baseMonoEntity, text.monoFont, bgColor, vim.commandStart & vim.commandText, [])
       if vim.commandCompletion != "":
@@ -618,7 +618,7 @@ proc tick*(game: RootGame, clear: bool): bool =
       e.scale(fontSize, fontSize)
       render(game, e)
   elif vim.message != "":
-    var e = deepCopy(monoEntity)
+    var e = gl.copy(monoEntity)
     text.updateUniforms(e, 0, 0, false)
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, vim.message, [])
     e.project(float(windowWidth), float(windowHeight))

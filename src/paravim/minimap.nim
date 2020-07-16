@@ -1,4 +1,5 @@
 from text import nil
+from paranim/gl import nil
 from paranim/gl/entities import nil
 from colors import nil
 
@@ -60,7 +61,7 @@ proc initMinimap*(
     result.textEntity = e
   # minimap rects
   block:
-    var e = deepCopy(rectsEntity)
+    var e = gl.copy(rectsEntity)
     var bg = uncompiledRectEntity
     bg.project(float(windowWidth), float(windowHeight))
     bg.translate(float(windowWidth) - minimapWidth, 0)
