@@ -39,10 +39,11 @@ type
   UncompiledParavimTextEntity = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
 
 proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledParavimTextEntity =
+  let e = gl.copy(entity) # make a copy to prevent unexpected problems if `entity` is changed later
   result.vertexSource = instancedTextVertexShader
   result.fragmentSource = instancedTextFragmentShader
-  result.uniforms.u_matrix = entity.uniforms.u_matrix
-  result.uniforms.u_image = entity.uniforms.u_image
+  result.uniforms.u_matrix = e.uniforms.u_matrix
+  result.uniforms.u_image = e.uniforms.u_image
   result.uniforms.u_char_counts.disable = true
   result.uniforms.u_start_column.data = 0
   result.uniforms.u_font_height.data = font.height
@@ -56,10 +57,7 @@ proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledP
   new(result.attributes.a_texture_matrix.data)
   result.attributes.a_color = Attribute[GLfloat](disable: true, divisor: 1, size: 4, iter: 1)
   new(result.attributes.a_color.data)
-  result.attributes.a_position = entity.attributes.a_position
-  # do a full copy of the data to avoid unexpected problems
-  new(result.attributes.a_position.data)
-  result.attributes.a_position.data[] = entity.attributes.a_position.data[]
+  result.attributes.a_position = e.attributes.a_position
 
 proc addInstanceAttr[T](attr: var Attribute[T], uni: Uniform[Mat3x3[T]]) =
   for r in 0 .. 2:
