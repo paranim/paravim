@@ -4,6 +4,7 @@ from paravim/core import nil
 from paravim/vim import nil
 from paravim/libvim import nil
 from paravim/structs import nil
+from pararules import nil
 import tables
 import bitops
 from os import nil
@@ -121,8 +122,9 @@ proc tick*(game: gl.RootGame, clear: bool): bool =
     ts = glfwGetTime()
     deltaTime = ts - totalTime
   totalTime = ts
-  result = core.tick(game, clear)
   core.insert(core.session, core.Global, core.DeltaTime, deltaTime)
+  pararules.fireRules(core.session)
+  result = core.tick(game, clear)
 
 proc tick*(game: gl.RootGame): bool =
   tick(game, false)

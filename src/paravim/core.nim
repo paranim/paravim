@@ -103,7 +103,7 @@ schema Fact(Id, Attr):
   ShowMinimap: bool
 
 var
-  session* = initSession(Fact)
+  session* = initSession(Fact, autoFire = false)
   nextId* = Id.high.ord + 1
   baseMonoEntity: ptext.UncompiledTextEntity
   monoEntity*: ParavimTextEntity
