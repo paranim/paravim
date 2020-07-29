@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.17.0"
+version       = "0.17.1"
 author        = "oakes"
 description   = "A parasitic editor"
 license       = "Public Domain"
@@ -21,5 +21,5 @@ installExt    = @[
 
 requires "nim >= 1.0.6"
 requires "paranim >= 0.9.0"
-requires "pararules >= 0.5.0"
+requires "pararules >= 0.6.0"
 requires "paratext >= 0.7.0"
