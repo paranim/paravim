@@ -103,7 +103,6 @@ schema Fact(Id, Attr):
   ShowMinimap: bool
 
 var
-  session* = initSession(Fact, autoFire = false)
   nextId* = Id.high.ord + 1
   baseMonoEntity: ptext.UncompiledTextEntity
   monoEntity*: ParavimTextEntity
@@ -111,8 +110,8 @@ var
   rectEntity: TwoDEntity
   rectsEntity: InstancedTwoDEntity
 
-let rules* =
-  ruleset:
+var (session*, rules*) =
+  initSessionWithRules(Fact, autoFire = false):
     rule windowTitleCallback(Fact):
       what:
         (Global, WindowTitle, title)
@@ -335,9 +334,6 @@ proc getCurrentSessionId*(): int =
     session.get(rules.getCurrentBuffer, index).id
   else:
     -1
-
-for r in rules.fields:
-  session.add(r)
 
 func mouseToCursorPosition(
       mouseX: float, mouseY: float, scrollX: float, scrollY: float, fontWidth: float, fontHeight: float
