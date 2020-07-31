@@ -19,7 +19,7 @@ installExt    = @[
 
 # Dependencies
 
-requires "nim >= 1.0.6"
+requires "nim >= 1.2.0"
 requires "paranim >= 0.9.0"
 requires "pararules >= 0.7.0"
 requires "paratext >= 0.7.0"
