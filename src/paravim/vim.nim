@@ -18,7 +18,7 @@ proc completeCommand() =
     let firstPart = cropCommandText(vim.commandText)
     # delete everything after the first part of the command
     for _ in firstPart.len ..< vim.commandText.len:
-      vimInput("<BS>")
+      vimKey("<BS>")
     # input everything from the completion
     for i in firstPart.len ..< vim.commandCompletion.len:
       vimInput($ vim.commandCompletion[i])
@@ -27,9 +27,9 @@ proc executeCommand() =
   let vim = pararules.query(session, rules.getVim)
   if vim.commandStart == ':' and asciiArt.hasKey(vim.commandText):
     session.insert(Global, AsciiArt, vim.commandText)
-    vimInput("<Esc>")
+    vimKey("<Esc>")
   else:
-    vimInput("<Enter>")
+    vimKey("<Enter>")
 
 proc updateCommandStart(input: string) =
   const
@@ -110,7 +110,10 @@ proc onInput*(input: string) =
     executeCommand()
   else:
     session.insert(Global, AsciiArt, "")
-    vimInput(input)
+    if strutils.startsWith(input, "<") and strutils.endsWith(input, ">"):
+      vimKey(input)
+    else:
+      vimInput(input)
   let mode = vimGetMode()
   session.insert(Global, VimMode, mode)
   if mode == libvim.CommandLine.ord:

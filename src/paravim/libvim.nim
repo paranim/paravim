@@ -121,6 +121,7 @@ proc vimCursorSetPosition*(pos: pos_T) {.cdecl, importc.}
 ## *
 
 proc vimInput*(input: cstring) {.cdecl, importc.}
+proc vimKey*(input: cstring) {.cdecl, importc.}
 proc vimExecute*(cmd: cstring) {.cdecl, importc.}
 ## **
 ##  Messages
