@@ -50,14 +50,14 @@ type
   TSInput* {.bycopy.} = object
     payload*: pointer
     read*: proc (payload: pointer; byte_index: uint32_t; position: TSPoint;
-               bytes_read: ptr uint32_t): cstring
+               bytes_read: ptr uint32_t): cstring {.cdecl.}
     encoding*: TSInputEncoding
 
   TSLogType* = enum
     TSLogTypeParse, TSLogTypeLex
   TSLogger* {.bycopy.} = object
     payload*: pointer
-    log*: proc (payload: pointer; a2: TSLogType; a3: cstring)
+    log*: proc (payload: pointer; a2: TSLogType; a3: cstring) {.cdecl.}
 
   TSInputEdit* {.bycopy.} = object
     start_byte*: uint32_t
