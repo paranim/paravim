@@ -35,7 +35,7 @@ type
 ##  for the command line arguments for this vim instance.
 ##
 
-proc vimInit*(argc: cint; argv: cstringArray){.cdecl, dynlib: getLib(), importc: "vimInit".}
+proc vimInit*(argc: cint; argv: cstringArray){.cdecl, dynlib: getLib(), importc.}
 ## **
 ##  Buffer Methods
 ## *
@@ -45,7 +45,7 @@ proc vimInit*(argc: cint; argv: cstringArray){.cdecl, dynlib: getLib(), importc:
 ##  Open a buffer and set as current.
 ##
 
-proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): buf_T {.cdecl, dynlib: getLib(), importc: "vimBufferOpen".}
+proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): buf_T {.cdecl, dynlib: getLib(), importc.}
 ##
 ##  vimBufferCheckIfChanged
 ##
@@ -57,14 +57,14 @@ proc vimBufferOpen*(ffname_arg: cstring; lnum: linenr_T; flags: cint): buf_T {.c
 
 #proc vimBufferCheckIfChanged*(buf: buf_T): cint
 #proc vimBufferGetById*(id: cint): buf_T
-proc vimBufferGetCurrent*(): buf_T {.cdecl, dynlib: getLib(), importc: "vimBufferGetCurrent".}
+proc vimBufferGetCurrent*(): buf_T {.cdecl, dynlib: getLib(), importc.}
 #proc vimBufferSetCurrent*(buf: buf_T)
-proc vimBufferGetFilename*(buf: buf_T): ptr char_u {.cdecl, dynlib: getLib(), importc: "vimBufferGetFilename".}
+proc vimBufferGetFilename*(buf: buf_T): ptr char_u {.cdecl, dynlib: getLib(), importc.}
 #proc vimBufferGetFiletype*(buf: buf_T): ptr char_u
-proc vimBufferGetId*(buf: buf_T): cint {.cdecl, dynlib: getLib(), importc: "vimBufferGetId".}
+proc vimBufferGetId*(buf: buf_T): cint {.cdecl, dynlib: getLib(), importc.}
 #proc vimBufferGetLastChangedTick*(buf: buf_T): clong
-proc vimBufferGetLine*(buf: buf_T; lnum: linenr_T): ptr char_u {.cdecl, dynlib: getLib(), importc: "vimBufferGetLine".}
-proc vimBufferGetLineCount*(buf: buf_T): csize {.cdecl, dynlib: getLib(), importc: "vimBufferGetLineCount".}
+proc vimBufferGetLine*(buf: buf_T; lnum: linenr_T): ptr char_u {.cdecl, dynlib: getLib(), importc.}
+proc vimBufferGetLineCount*(buf: buf_T): csize {.cdecl, dynlib: getLib(), importc.}
 ##
 ##  vimBufferSetLines
 ##
@@ -79,28 +79,28 @@ proc vimBufferGetLineCount*(buf: buf_T): csize {.cdecl, dynlib: getLib(), import
 #proc vimBufferSetLines*(buf: buf_T; start: linenr_T; `end`: linenr_T;
 #                       lines: ptr ptr char_u; count: cint)
 #proc vimBufferGetModified*(buf: buf_T): cint
-proc vimSetBufferUpdateCallback*(bufferUpdate: BufferUpdateCallback) {.cdecl, dynlib: getLib(), importc: "vimSetBufferUpdateCallback".}
+proc vimSetBufferUpdateCallback*(bufferUpdate: BufferUpdateCallback) {.cdecl, dynlib: getLib(), importc.}
 ## **
 ##  Autocommands
 ## *
 
-proc vimSetAutoCommandCallback*(autoCommandDispatch: AutoCommandCallback) {.cdecl, dynlib: getLib(), importc: "vimSetAutoCommandCallback".}
+proc vimSetAutoCommandCallback*(autoCommandDispatch: AutoCommandCallback) {.cdecl, dynlib: getLib(), importc.}
 ## *
 ##  Commandline
 ## *
 
 #proc vimCommandLineGetType*(): char_u
-proc vimCommandLineGetText*(): ptr char_u {.cdecl, dynlib: getLib(), importc: "vimCommandLineGetText".}
-proc vimCommandLineGetPosition*(): cint {.cdecl, dynlib: getLib(), importc: "vimCommandLineGetPosition".}
-proc vimCommandLineGetCompletions*(completions: ptr cstringArray; count: ptr cint) {.cdecl, dynlib: getLib(), importc: "vimCommandLineGetCompletions".}
+proc vimCommandLineGetText*(): ptr char_u {.cdecl, dynlib: getLib(), importc.}
+proc vimCommandLineGetPosition*(): cint {.cdecl, dynlib: getLib(), importc.}
+proc vimCommandLineGetCompletions*(completions: ptr cstringArray; count: ptr cint) {.cdecl, dynlib: getLib(), importc.}
 ## **
 ##  Cursor Methods
 ## *
 
-proc vimCursorGetColumn*(): colnr_T {.cdecl, dynlib: getLib(), importc: "vimCursorGetColumn".}
-proc vimCursorGetLine*(): linenr_T {.cdecl, dynlib: getLib(), importc: "vimCursorGetLine".}
+proc vimCursorGetColumn*(): colnr_T {.cdecl, dynlib: getLib(), importc.}
+proc vimCursorGetLine*(): linenr_T {.cdecl, dynlib: getLib(), importc.}
 #proc vimCursorGetPosition*(): pos_T
-proc vimCursorSetPosition*(pos: pos_T) {.cdecl, dynlib: getLib(), importc: "vimCursorSetPosition".}
+proc vimCursorSetPosition*(pos: pos_T) {.cdecl, dynlib: getLib(), importc.}
 ## **
 ##  vimCursorGetDesiredColumn
 ##
@@ -118,13 +118,13 @@ proc vimCursorSetPosition*(pos: pos_T) {.cdecl, dynlib: getLib(), importc: "vimC
 ##  User Input
 ## *
 
-proc vimInput*(input: cstring) {.cdecl, dynlib: getLib(), importc: "vimInput".}
-proc vimExecute*(cmd: cstring) {.cdecl, dynlib: getLib(), importc: "vimExecute".}
+proc vimInput*(input: cstring) {.cdecl, dynlib: getLib(), importc.}
+proc vimExecute*(cmd: cstring) {.cdecl, dynlib: getLib(), importc.}
 ## **
 ##  Messages
 ## *
 
-proc vimSetMessageCallback*(messageCallback: MessageCallback) {.cdecl, dynlib: getLib(), importc: "vimSetMessageCallback".}
+proc vimSetMessageCallback*(messageCallback: MessageCallback) {.cdecl, dynlib: getLib(), importc.}
 ## *
 ##  Misc
 ##
@@ -142,7 +142,7 @@ proc vimSetMessageCallback*(messageCallback: MessageCallback) {.cdecl, dynlib: g
 ##  - `force`: a boolean if the command was forced (ie, if `q!` was used)
 ##
 
-proc vimSetQuitCallback*(callback: QuitCallback) {.cdecl, dynlib: getLib(), importc: "vimSetQuitCallback".}
+proc vimSetQuitCallback*(callback: QuitCallback) {.cdecl, dynlib: getLib(), importc.}
 ##
 ##  vimSetUnhandledEscapeCallback
 ##
@@ -153,15 +153,15 @@ proc vimSetQuitCallback*(callback: QuitCallback) {.cdecl, dynlib: getLib(), impo
 ##  to clear messages or alerts).
 ##
 
-proc vimSetUnhandledEscapeCallback*(callback: VoidCallback) {.cdecl, dynlib: getLib(), importc: "vimSetUnhandledEscapeCallback".}
+proc vimSetUnhandledEscapeCallback*(callback: VoidCallback) {.cdecl, dynlib: getLib(), importc.}
 ## **
 ##  Options
 ##
 
-proc vimOptionSetTabSize*(tabSize: cint) {.cdecl, dynlib: getLib(), importc: "vimOptionSetTabSize".}
-proc vimOptionSetInsertSpaces*(insertSpaces: cint) {.cdecl, dynlib: getLib(), importc: "vimOptionSetInsertSpaces".}
-proc vimOptionGetInsertSpaces*(): cint {.cdecl, dynlib: getLib(), importc: "vimOptionGetInsertSpaces".}
-proc vimOptionGetTabSize*(): cint {.cdecl, dynlib: getLib(), importc: "vimOptionGetTabSize".}
+proc vimOptionSetTabSize*(tabSize: cint) {.cdecl, dynlib: getLib(), importc.}
+proc vimOptionSetInsertSpaces*(insertSpaces: cint) {.cdecl, dynlib: getLib(), importc.}
+proc vimOptionGetInsertSpaces*(): cint {.cdecl, dynlib: getLib(), importc.}
+proc vimOptionGetTabSize*(): cint {.cdecl, dynlib: getLib(), importc.}
 ## **
 ##  Registers
 ## *
@@ -177,8 +177,8 @@ proc vimOptionGetTabSize*(): cint {.cdecl, dynlib: getLib(), importc: "vimOption
 ##  Visual Mode
 ## *
 
-proc vimVisualGetType*(): cint {.cdecl, dynlib: getLib(), importc: "vimVisualGetType".}
-proc vimVisualIsActive*(): cint {.cdecl, dynlib: getLib(), importc: "vimVisualIsActive".}
+proc vimVisualGetType*(): cint {.cdecl, dynlib: getLib(), importc.}
+proc vimVisualIsActive*(): cint {.cdecl, dynlib: getLib(), importc.}
 #proc vimSelectIsActive*(): cint
 ##
 ##  vimVisualGetRange
@@ -187,7 +187,7 @@ proc vimVisualIsActive*(): cint {.cdecl, dynlib: getLib(), importc: "vimVisualIs
 ##  If not in visual or select mode, returns the last visual range.
 ##
 
-proc vimVisualGetRange*(startPos: ptr pos_T; endPos: ptr pos_T) {.cdecl, dynlib: getLib(), importc: "vimVisualGetRange".}
+proc vimVisualGetRange*(startPos: ptr pos_T; endPos: ptr pos_T) {.cdecl, dynlib: getLib(), importc.}
 ## **
 ##  Search
 ## *
@@ -209,7 +209,7 @@ proc vimVisualGetRange*(startPos: ptr pos_T; endPos: ptr pos_T) {.cdecl, dynlib:
 
 proc vimSearchGetHighlights*(start_lnum: linenr_T; end_lnum: linenr_T;
                              num_highlights: ptr cint;
-                             highlights: ptr ptr searchHighlight_T) {.cdecl, dynlib: getLib(), importc: "vimSearchGetHighlights".}
+                             highlights: ptr ptr searchHighlight_T) {.cdecl, dynlib: getLib(), importc.}
 ##
 ##  vimSearchGetPattern
 ##
@@ -217,7 +217,7 @@ proc vimSearchGetHighlights*(start_lnum: linenr_T; end_lnum: linenr_T;
 ##
 
 #proc vimSearchGetPattern*(): ptr char_u
-proc vimSetStopSearchHighlightCallback*(callback: VoidCallback) {.cdecl, dynlib: getLib(), importc: "vimSetStopSearchHighlightCallback".}
+proc vimSetStopSearchHighlightCallback*(callback: VoidCallback) {.cdecl, dynlib: getLib(), importc.}
 ## **
 ##  Window
 ##
@@ -226,8 +226,8 @@ proc vimSetStopSearchHighlightCallback*(callback: VoidCallback) {.cdecl, dynlib:
 #proc vimWindowGetHeight*(): cint
 #proc vimWindowGetTopLine*(): cint
 #proc vimWindowGetLeftColumn*(): cint
-proc vimWindowSetWidth*(width: cint) {.cdecl, dynlib: getLib(), importc: "vimWindowSetWidth".}
-proc vimWindowSetHeight*(height: cint) {.cdecl, dynlib: getLib(), importc: "vimWindowSetHeight".}
+proc vimWindowSetWidth*(width: cint) {.cdecl, dynlib: getLib(), importc.}
+proc vimWindowSetHeight*(height: cint) {.cdecl, dynlib: getLib(), importc.}
 #proc vimWindowSetTopLeft*(top: cint; left: cint)
 #proc vimSetWindowSplitCallback*(callback: WindowSplitCallback)
 #proc vimSetWindowMovementCallback*(callback: WindowMovementCallback)
@@ -236,8 +236,8 @@ proc vimWindowSetHeight*(height: cint) {.cdecl, dynlib: getLib(), importc: "vimW
 ## *
 
 #proc vimSetClipboardGetCallback*(callback: ClipboardGetCallback)
-proc vimGetMode*(): cint {.cdecl, dynlib: getLib(), importc: "vimGetMode".}
-proc vimSetYankCallback*(callback: YankCallback) {.cdecl, dynlib: getLib(), importc: "vimSetYankCallback".}
+proc vimGetMode*(): cint {.cdecl, dynlib: getLib(), importc.}
+proc vimSetYankCallback*(callback: YankCallback) {.cdecl, dynlib: getLib(), importc.}
 ##  Callbacks for when the `:intro` and `:version` commands are used
 ##
 ##   The Vim license has some specific requirements when implementing these methods:
