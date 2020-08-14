@@ -18,18 +18,18 @@ proc completeCommand() =
     let firstPart = cropCommandText(vim.commandText)
     # delete everything after the first part of the command
     for _ in firstPart.len ..< vim.commandText.len:
-      vimKey("<BS>")
+      vimInput("<BS>")
     # input everything from the completion
     for i in firstPart.len ..< vim.commandCompletion.len:
-      vimInput($ vim.commandCompletion[i])
+      vimInputUnicode($ vim.commandCompletion[i])
 
 proc executeCommand() =
   let vim = pararules.query(session, rules.getVim)
   if vim.commandStart == ':' and asciiArt.hasKey(vim.commandText):
     session.insert(Global, AsciiArt, vim.commandText)
-    vimKey("<Esc>")
+    vimInput("<Esc>")
   else:
-    vimKey("<Enter>")
+    vimInput("<Enter>")
 
 proc updateCommandStart(input: string) =
   const
@@ -111,9 +111,9 @@ proc onInput*(input: string) =
   else:
     session.insert(Global, AsciiArt, "")
     if strutils.startsWith(input, "<") and strutils.endsWith(input, ">"):
-      vimKey(input)
-    else:
       vimInput(input)
+    else:
+      vimInputUnicode(input)
   let mode = vimGetMode()
   session.insert(Global, VimMode, mode)
   if mode == libvim.CommandLine.ord:
@@ -127,7 +127,7 @@ proc onBulkInput*(input: string) =
   for ch in input:
     if ch == '\r':
       continue
-    vimInput($ ch)
+    vimInputUnicode($ ch)
   vimExecute("set nopaste")
   updateAfterInput()
 
