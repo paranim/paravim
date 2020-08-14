@@ -5,6 +5,7 @@ from strutils import nil
 from os import nil
 from tree_sitter import nil
 import tables
+from unicode import nil
 
 proc cropCommandText(commandText: string): string =
   result = ""
@@ -124,10 +125,10 @@ proc onInput*(input: string) =
 
 proc onBulkInput*(input: string) =
   vimExecute("set paste")
-  for ch in input:
-    if ch == '\r':
+  for ch in unicode.utf8(input):
+    if ch == "\r":
       continue
-    vimInputUnicode($ ch)
+    vimInputUnicode(ch)
   vimExecute("set nopaste")
   updateAfterInput()
 
