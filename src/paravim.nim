@@ -37,6 +37,8 @@ const glfwToVimChars =
 
 proc keyCallback*(window: GLFWWindow, key: int32, scancode: int32,
                   action: int32, mods: int32) {.cdecl.} =
+  if key < 0:
+    return
   if action == GLFW_PRESS:
     let
       isControl = 0 != bitand(mods, GLFW_MOD_CONTROL)
