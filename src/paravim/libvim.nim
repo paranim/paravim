@@ -15,7 +15,8 @@ proc getLib(): string =
   else:
     currentSourcePath().parentDir().joinPath("bin").joinPath("libvim." & extension)
 
-{.push dynlib: getLib().}
+when not defined(paravim_static):
+  {.push dynlib: getLib().}
 
 type
   Mode* = enum
@@ -78,8 +79,8 @@ proc vimBufferGetLineCount*(buf: buf_T): csize {.cdecl, importc.}
 ##  vimBufferSetLine(buf, 0, 0, ["def"]); // Insert "def" before the contents of the buffer
 ##
 
-#proc vimBufferSetLines*(buf: buf_T; start: linenr_T; `end`: linenr_T;
-#                       lines: ptr ptr char_u; count: cint)
+proc vimBufferSetLines*(buf: buf_T; start: linenr_T; `end`: linenr_T;
+                        lines: cstringArray; count: cint) {.cdecl, importc.}
 #proc vimBufferGetModified*(buf: buf_T): cint
 proc vimSetBufferUpdateCallback*(bufferUpdate: BufferUpdateCallback) {.cdecl, importc.}
 ## **
