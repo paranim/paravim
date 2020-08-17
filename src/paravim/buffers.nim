@@ -1,4 +1,3 @@
-import nimgl/opengl
 from text import nil
 from math import nil
 
