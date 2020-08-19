@@ -58,7 +58,12 @@ proc tick*() =
     vimInfo = pararules.query(core.session, core.rules.getVim)
     currentBufferIndex = pararules.find(core.session, core.rules.getCurrentBuffer)
 
-  var tb = iw.newTerminalBuffer(iw.terminalWidth(), iw.terminalHeight())
+  let
+    width = iw.terminalWidth()
+    height = iw.terminalHeight()
+  var tb = iw.newTerminalBuffer(width, height)
+  if width != windowWidth or height != windowHeight:
+    core.onWindowResize(width, height)
 
   if ascii != "":
     let lines = core.asciiArt[ascii]
