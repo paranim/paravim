@@ -42,22 +42,6 @@ proc init*() =
   core.initAscii(true)
 
 proc tick*() =
-  pararules.fireRules(core.session)
-  let
-    (windowWidth, windowHeight, ascii) = pararules.query(core.session, core.rules.getWindow)
-    vimInfo = pararules.query(core.session, core.rules.getVim)
-    currentBufferIndex = pararules.find(core.session, core.rules.getCurrentBuffer)
-
-  var tb = iw.newTerminalBuffer(iw.terminalWidth(), iw.terminalHeight())
-
-  iw.setForegroundColor(tb, iw.fgBlack, true)
-  iw.drawRect(tb, 0, 0, iw.width(tb)-1, iw.height(tb)-1)
-  iw.drawHorizLine(tb, 2, 38, 3, doubleStyle=true)
-
-  iw.write(tb, 2, 1, iw.fgWhite, "Press any key to display its name")
-  iw.write(tb, 2, 2, "Press ", iw.fgYellow, "ESC", iw.fgWhite,
-           " or ", iw.fgYellow, "Q", iw.fgWhite, " to quit")
-
   var key = iw.getKey()
   case key
   of iw.Key.None: discard
@@ -67,6 +51,19 @@ proc tick*() =
       vim.onInput("<" & iwToVimSpecials[code] & ">")
     elif code > 32:
       vim.onInput($ char(code))
-      #iw.write(tb, 2, 3, $code)
+  pararules.fireRules(core.session)
+
+  let
+    (windowWidth, windowHeight, ascii) = pararules.query(core.session, core.rules.getWindow)
+    vimInfo = pararules.query(core.session, core.rules.getVim)
+    currentBufferIndex = pararules.find(core.session, core.rules.getCurrentBuffer)
+
+  var tb = iw.newTerminalBuffer(iw.terminalWidth(), iw.terminalHeight())
+
+  if ascii != "":
+    let lines = core.asciiArt[ascii]
+    for i in 0 ..< lines.len:
+      iw.write(tb, 0, i, lines[i])
+
   iw.setCursorPos(tb, 0, 0)
   iw.display(tb)
