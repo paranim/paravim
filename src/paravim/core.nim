@@ -37,7 +37,7 @@ type
     Global
   Attr* = enum
     DeltaTime,
-    WindowTitle, WindowTitleCallback,
+    WindowTitle,
     WindowWidth, WindowHeight,
     MouseX, MouseY,
     FontSize, CurrentBufferId,
@@ -58,12 +58,10 @@ type
     ShowMinimap,
   RefStrings = ref seq[string]
   RangeTuples = seq[RangeTuple]
-  WindowTitleCallbackType = proc (title: string)
 
 schema Fact(Id, Attr):
   DeltaTime: float
   WindowTitle: string
-  WindowTitleCallback: WindowTitleCallbackType
   WindowWidth: int
   WindowHeight: int
   MouseX: float
@@ -109,15 +107,16 @@ var
   uncompiledRectEntity: UncompiledTwoDEntity
   rectEntity: TwoDEntity
   rectsEntity: InstancedTwoDEntity
+  windowTitleCallback*: proc (title: string)
 
 var (session*, rules*) =
   initSessionWithRules(Fact, autoFire = false):
     rule windowTitleCallback(Fact):
       what:
         (Global, WindowTitle, title)
-        (Global, WindowTitleCallback, callback)
       then:
-        callback(title)
+        if windowTitleCallback != nil:
+          windowTitleCallback(title)
     rule getWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)
@@ -446,6 +445,20 @@ proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, te
   text.updateUniforms(e, 0, 0, false)
   session.insert(id, Text, e)
 
+proc initAscii*(showAscii: bool) =
+  let ascii =
+    if showAscii:
+      let
+        date = times.now()
+        md = (date.month, date.monthday.ord)
+      if md == (times.mAug, 8): "cat"
+      elif md == (times.mJul, 4): "usa"
+      elif md == (times.mDec, 25): "christmas"
+      else: "intro"
+    else:
+      ""
+  session.insert(Global, AsciiArt, ascii)
+
 proc init*(game: var RootGame, showAscii: bool, density: float) =
   # opengl
   doAssert glInit()
@@ -462,20 +475,9 @@ proc init*(game: var RootGame, showAscii: bool, density: float) =
 
   # set initial values
   session.insert(Global, FontSize, defaultFontSize * density)
-  let ascii =
-    if showAscii:
-      let
-        date = times.now()
-        md = (date.month, date.monthday.ord)
-      if md == (times.mAug, 8): "cat"
-      elif md == (times.mJul, 4): "usa"
-      elif md == (times.mDec, 25): "christmas"
-      else: "intro"
-    else:
-      ""
-  session.insert(Global, AsciiArt, ascii)
   session.insert(Global, MouseX, 0f)
   session.insert(Global, MouseY, 0f)
+  initAscii(showAscii)
 
 proc tick*(game: RootGame, clear: bool): bool =
   result = false # if true, the game loop must continue immediately because we're animating
