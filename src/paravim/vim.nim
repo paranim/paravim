@@ -155,14 +155,15 @@ proc onBufDelete(buf: buf_T) =
   session.retract(id, LineCount)
   session.retract(id, Tree)
   session.retract(id, Parser)
-  session.retract(id, Text)
-  session.retract(id, CroppedText)
-  session.retract(id, MinimapText)
-  session.retract(id, MinimapRects)
-  session.retract(id, ShowMinimap)
   session.retract(id, VimVisualRange)
   session.retract(id, VimVisualBlockMode)
   session.retract(id, VimSearchRanges)
+  if pararules.find(session, rules.getBufferEntities, id = id) != -1:
+    session.retract(id, Text)
+    session.retract(id, CroppedText)
+    session.retract(id, MinimapText)
+    session.retract(id, MinimapRects)
+    session.retract(id, ShowMinimap)
 
 proc onBufEnter(buf: buf_T) =
   let
@@ -255,11 +256,11 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   session.insert(buffer.id, Tree, newTree)
   # update text entity
   block:
-    let index = pararules.find(session, rules.getBufferText, id = buffer.id)
+    let index = pararules.find(session, rules.getBufferEntities, id = buffer.id)
     if index == -1:
       return
-    let text = pararules.get(session, rules.getBufferText, index).text
-    updateTextEntity(buffer.id, newLines, parsed, text, bu)
+    let bufferEntities = pararules.get(session, rules.getBufferEntities, index)
+    updateTextEntity(buffer.id, newLines, parsed, bufferEntities.text, bu)
 
 proc onStopSearch() {.cdecl.} =
   session.insert(Global, VimShowSearch, false)

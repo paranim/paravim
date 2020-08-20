@@ -156,36 +156,23 @@ var (session*, rules*) =
         (id, VimSearchRanges, searchRanges)
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
-    rule getCurrentBufferExtended(Fact):
-      what:
-        (Global, CurrentBufferId, bufferId)
-        (id, BufferId, bufferId)
-        (id, Lines, lines)
-        (id, CursorLine, cursorLine)
-        (id, CursorColumn, cursorColumn)
-        (id, VimVisualRange, visualRange)
-        (id, VimVisualBlockMode, visualBlockMode)
-        (id, VimSearchRanges, searchRanges)
-        (id, ScrollX, scrollX)
-        (id, ScrollY, scrollY)
         (id, ScrollTargetX, scrollTargetX)
         (id, ScrollTargetY, scrollTargetY)
         (id, ScrollSpeedX, scrollSpeedX)
         (id, ScrollSpeedY, scrollSpeedY)
-        (id, Text, text)
-        (id, CroppedText, croppedText)
-        (id, MinimapText, minimapText)
-        (id, MinimapRects, minimapRects)
-        (id, ShowMinimap, showMinimap)
     rule getBuffer(Fact):
       what:
         (id, BufferId, bufferId)
         (id, Lines, lines)
         (id, Tree, tree)
         (id, Parser, parser)
-    rule getBufferText(Fact):
+    rule getBufferEntities(Fact):
       what:
         (id, Text, text)
+        (id, CroppedText, croppedText)
+        (id, MinimapText, minimapText)
+        (id, MinimapRects, minimapRects)
+        (id, ShowMinimap, showMinimap)
     rule resizeWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)
@@ -433,7 +420,7 @@ proc onScroll*(xoffset: float64, yoffset: float64) =
   if index == -1:
     return
   let
-    buffer = session.get(rules.getCurrentBufferExtended, index)
+    buffer = session.get(rules.getCurrentBuffer, index)
     scrollData = (
       buffer.scrollX, buffer.scrollY,
       buffer.scrollTargetX, buffer.scrollTargetY,
@@ -546,7 +533,7 @@ proc tick*(game: RootGame, clear: bool): bool =
     (windowWidth, windowHeight, ascii) = session.query(rules.getWindow)
     (fontSize) = session.query(rules.getFont)
     vim = session.query(rules.getVim)
-    currentBufferIndex = session.find(rules.getCurrentBufferExtended)
+    currentBufferIndex = session.find(rules.getCurrentBuffer)
     fontWidth = text.monoFontWidth * fontSize
     fontHeight = text.monoFont.height * fontSize
 
@@ -572,7 +559,8 @@ proc tick*(game: RootGame, clear: bool): bool =
     e.scale(fontSize, fontSize)
     render(game, e)
   elif currentBufferIndex >= 0:
-    let currentBuffer = session.get(rules.getCurrentBufferExtended, currentBufferIndex)
+    let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
+    let currentBufferEntities = session.query(rules.getBufferEntities, id = currentBuffer.id)
     result =
       currentBuffer.scrollX != currentBuffer.scrollTargetX or
       currentBuffer.scrollY != currentBuffer.scrollTargetY
@@ -623,17 +611,17 @@ proc tick*(game: RootGame, clear: bool): bool =
         render(game, e)
     # text
     block:
-      var e = currentBuffer.croppedText
+      var e = currentBufferEntities.croppedText
       if e.instanceCount > 0:
         e.project(float(windowWidth), float(windowHeight))
         e.invert(camera)
         e.scale(fontSize, fontSize)
         render(game, e)
     # mini map
-    if currentBuffer.showMinimap and currentBuffer.minimapText.instanceCount > 0:
-      var rects = currentBuffer.minimapRects
+    if currentBufferEntities.showMinimap and currentBufferEntities.minimapText.instanceCount > 0:
+      var rects = currentBufferEntities.minimapRects
       render(game, rects)
-      var text = currentBuffer.minimapText
+      var text = currentBufferEntities.minimapText
       render(game, text)
 
   # command line background
