@@ -354,6 +354,13 @@ var (session*, rules*) =
         (Global, WindowColumns, windowColumns)
         (Global, WindowLines, windowLines)
         (Global, AsciiArt, ascii)
+    rule resizeTerminalWindow(Fact):
+      what:
+        (Global, WindowColumns, windowColumns)
+        (Global, WindowLines, windowLines)
+      then:
+        libvim.vimWindowSetWidth(windowColumns.int32)
+        libvim.vimWindowSetHeight(windowLines.int32)
     rule updateTerminalScrollX(Fact):
       what:
         (Global, WindowColumns, windowColumns)
