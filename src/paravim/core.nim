@@ -115,8 +115,8 @@ var
   rectsEntity: InstancedTwoDEntity
   windowTitleCallback*: proc (title: string)
 
-var (session*, rules*) =
-  initSessionWithRules(Fact, autoFire = false):
+let rules* =
+  ruleset:
     rule windowTitleCallback(Fact):
       what:
         (Global, WindowTitle, title)
@@ -335,41 +335,11 @@ var (session*, rules*) =
         session.insert(id, ScrollY, ret.y)
         session.insert(id, ScrollSpeedX, ret.speedX)
         session.insert(id, ScrollSpeedY, ret.speedY)
-    # only used in terminal mode:
-    rule getTerminalWindow(Fact):
-      what:
-        (Global, WindowColumns, windowColumns)
-        (Global, WindowLines, windowLines)
-        (Global, AsciiArt, ascii)
-    rule resizeTerminalWindow(Fact):
-      what:
-        (Global, WindowColumns, windowColumns)
-        (Global, WindowLines, windowLines)
-      then:
-        libvim.vimWindowSetWidth(windowColumns.int32)
-        libvim.vimWindowSetHeight(windowLines.int32)
-    rule updateTerminalScrollX(Fact):
-      what:
-        (Global, WindowColumns, windowColumns)
-        (id, CursorColumn, cursorColumn)
-        (id, ScrollX, scrollX, then = false)
-      then:
-        let scrollRight = scrollX.int + windowColumns - 1
-        if cursorColumn < scrollX.int:
-          session.insert(id, ScrollX, cursorColumn.float)
-        elif cursorColumn > scrollRight:
-          session.insert(id, ScrollX, scrollX + float(cursorColumn - scrollRight))
-    rule updateTerminalScrollY(Fact):
-      what:
-        (Global, WindowLines, windowLines)
-        (id, CursorLine, cursorLine)
-        (id, ScrollY, scrollY, then = false)
-      then:
-        let scrollBottom = scrollY.int + windowLines - 2
-        if cursorLine < scrollY.int:
-          session.insert(id, ScrollY, cursorLine.float)
-        elif cursorLine > scrollBottom:
-          session.insert(id, ScrollY, scrollY + float(cursorLine - scrollBottom))
+
+var session* = initSession(Fact, autoFire = false)
+
+for r in rules.fields:
+  session.add(r)
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)

@@ -1,12 +1,49 @@
 import illwill as iw
-from pararules import nil
+import pararules
 from paravim/libvim import nil
 from paravim/vim import nil
 from paravim/structs import nil
-from paravim/core import nil
+import paravim/core
 from paravim/buffers import nil
 import strutils
 import tables
+
+let termRules =
+  ruleset:
+    rule getTerminalWindow(Fact):
+      what:
+        (Global, WindowColumns, windowColumns)
+        (Global, WindowLines, windowLines)
+        (Global, AsciiArt, ascii)
+    rule resizeTerminalWindow(Fact):
+      what:
+        (Global, WindowColumns, windowColumns)
+        (Global, WindowLines, windowLines)
+      then:
+        libvim.vimWindowSetWidth(windowColumns.int32)
+        libvim.vimWindowSetHeight(windowLines.int32)
+    rule updateTerminalScrollX(Fact):
+      what:
+        (Global, WindowColumns, windowColumns)
+        (id, CursorColumn, cursorColumn)
+        (id, ScrollX, scrollX, then = false)
+      then:
+        let scrollRight = scrollX.int + windowColumns - 1
+        if cursorColumn < scrollX.int:
+          session.insert(id, ScrollX, cursorColumn.float)
+        elif cursorColumn > scrollRight:
+          session.insert(id, ScrollX, scrollX + float(cursorColumn - scrollRight))
+    rule updateTerminalScrollY(Fact):
+      what:
+        (Global, WindowLines, windowLines)
+        (id, CursorLine, cursorLine)
+        (id, ScrollY, scrollY, then = false)
+      then:
+        let scrollBottom = scrollY.int + windowLines - 2
+        if cursorLine < scrollY.int:
+          session.insert(id, ScrollY, cursorLine.float)
+        elif cursorLine > scrollBottom:
+          session.insert(id, ScrollY, scrollY + float(cursorLine - scrollBottom))
 
 const iwToVimSpecials =
   {iw.Key.Backspace.ord: "<BS>",
@@ -47,6 +84,9 @@ proc init*(params: seq[string]) =
   proc onYank(yankInfo: ptr structs.yankInfo_T) {.cdecl.} =
     discard
 
+  for r in termRules.fields:
+    session.add(r)
+
   onWindowResize(iw.terminalWidth(), iw.terminalHeight())
   vim.init(onQuit, onYank)
   core.initAscii(true)
@@ -77,7 +117,7 @@ proc tick*() =
   pararules.fireRules(core.session)
 
   let
-    (windowColumns, windowLines, ascii) = pararules.query(core.session, core.rules.getTerminalWindow)
+    (windowColumns, windowLines, ascii) = pararules.query(core.session, termRules.getTerminalWindow)
     vimInfo = pararules.query(core.session, core.rules.getVim)
     currentBufferIndex = pararules.find(core.session, core.rules.getCurrentBuffer)
 
