@@ -57,7 +57,7 @@ proc tick*() =
     let code = key.ord
     if iwToVimSpecials.hasKey(code):
       vim.onInput("<" & iwToVimSpecials[code] & ">")
-    elif code > 32:
+    elif code >= 32:
       vim.onInput($ char(code))
   pararules.fireRules(core.session)
 
@@ -77,7 +77,20 @@ proc tick*() =
     let lines = core.asciiArt[ascii]
     for i in 0 ..< lines.len:
       iw.write(tb, 0, i, lines[i])
+  elif currentBufferIndex >= 0:
+    let currentBuffer = pararules.get(core.session, core.rules.getTerminalCurrentBuffer, currentBufferIndex)
+    let lines = currentBuffer.lines[]
+    for i in 0 ..< lines.len:
+      iw.write(tb, 0, i, lines[i])
 
-  iw.write(tb, 0, height-1, $currentBufferIndex)
+  if vimInfo.mode == libvim.CommandLine.ord:
+    iw.write(tb, 0, height-1, vimInfo.commandStart & vimInfo.commandText)
+    if vimInfo.commandCompletion != "":
+      let
+        compLen = vimInfo.commandCompletion.len
+        commLen = vimInfo.commandText.len
+      if compLen > commLen:
+        iw.write(tb, commLen+1, height-1, iw.fgYellow, vimInfo.commandCompletion[commLen ..< compLen])
+
   iw.setCursorPos(tb, 0, 0)
   iw.display(tb)
