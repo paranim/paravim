@@ -35,7 +35,6 @@ type
     a_color: Attribute[GLfloat]
   ]
   ParavimTextEntity* = object of InstancedEntity[ParavimTextEntityUniforms, ParavimTextEntityAttributes]
-    lineCount*: int
   UncompiledParavimTextEntity = object of UncompiledEntity[ParavimTextEntity, ParavimTextEntityUniforms, ParavimTextEntityAttributes]
 
 proc initInstancedEntity*(entity: UncompiledTextEntity, font: Font): UncompiledParavimTextEntity =
@@ -159,6 +158,9 @@ proc `[]=`*(instancedEntity: var UncompiledParavimTextEntity, i: int, entity: Un
 
 proc cropLines*(instancedEntity: var ParavimTextEntity, startLine: int, endLine: int) =
   let
+    # startLine and endLine could be temporarily too big if LineCount hasn't been updated yet
+    startLine = min(startLine, instancedEntity.uniforms.u_char_counts.data.len)
+    endLine = min(endLine, instancedEntity.uniforms.u_char_counts.data.len)
     prevLines = instancedEntity.uniforms.u_char_counts.data[0 ..< startLine]
     currLines = instancedEntity.uniforms.u_char_counts.data[startLine ..< endLine]
     i = math.sum(prevLines)

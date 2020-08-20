@@ -236,13 +236,14 @@ var (session*, rules*) =
         (Global, WindowHeight, windowHeight)
         (Global, FontSize, fontSize)
         (id, ScrollY, scrollY)
+        (id, LineCount, lineCount)
         (id, Text, fullText)
       then:
         var e = fullText
         let
           fontHeight = text.monoFont.height * fontSize
-          linesToSkip = min(int(scrollY / fontHeight), e.lineCount).max(0)
-          linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, e.lineCount)
+          linesToSkip = min(int(scrollY / fontHeight), lineCount).max(0)
+          linesToCrop = min(linesToSkip + int(windowHeight.float / fontHeight) + 1, lineCount)
         text.cropLines(e, linesToSkip, linesToCrop)
         text.updateUniforms(e, linesToSkip, 0, false)
         session.insert(id, CroppedText, e)
@@ -255,13 +256,14 @@ var (session*, rules*) =
         (id, ScrollY, scrollY)
         (id, Text, fullText)
         (id, ShowMinimap, showMinimap, then = false)
+        (id, LineCount, lineCount)
       then:
         let (text, rects, show) =
           minimap.initMinimap(
             fullText, rectsEntity, uncompiledRectEntity,
             windowWidth, windowHeight,
             fontSize, defaultFontSize,
-            scrollX, scrollY
+            scrollX, scrollY, lineCount,
           )
         session.insert(id, MinimapText, text)
         session.insert(id, MinimapRects, rects)
@@ -407,7 +409,6 @@ proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes) =
   for i in 0 ..< lines[].len:
     let parsedLine = if parsed != nil: parsed[i] else: @[]
     discard text.addLine(e, baseMonoEntity, text.monoFont, textColor, lines[][i], parsedLine)
-  e.lineCount = lines[].len
   text.updateUniforms(e, 0, 0, false)
   session.insert(id, Text, e)
 
@@ -436,7 +437,6 @@ proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, te
   text.add(e, nextEntity)
   if parsed != nil:
     text.updateColors(e, parsed, lines, textColor)
-  e.lineCount = lines[].len
   # u_char_counts must not be empty
   # because there is always at least one line
   if e.uniforms.u_char_counts.data.len == 0:

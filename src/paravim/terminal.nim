@@ -70,5 +70,6 @@ proc tick*() =
     for i in 0 ..< lines.len:
       iw.write(tb, 0, i, lines[i])
 
+  iw.write(tb, 0, height-1, $currentBufferIndex)
   iw.setCursorPos(tb, 0, 0)
   iw.display(tb)
