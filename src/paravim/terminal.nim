@@ -1,5 +1,6 @@
 from illwill as iw import nil
 from pararules import nil
+from paravim/libvim import nil
 from paravim/vim import nil
 from paravim/structs import nil
 from paravim/core import nil
@@ -30,7 +31,7 @@ proc exitProc() {.noconv.} =
   iw.showCursor()
   quit(0)
 
-proc init*() =
+proc init*(params: seq[string]) =
   iw.illwillInit(fullscreen=true)
   setControlCHook(exitProc)
   iw.hideCursor()
@@ -44,6 +45,9 @@ proc init*() =
   onWindowResize(iw.terminalWidth(), iw.terminalHeight())
   vim.init(onQuit, onYank)
   core.initAscii(true)
+
+  for fname in params:
+    discard libvim.vimBufferOpen(fname, 1, 0)
 
 proc tick*() =
   var key = iw.getKey()
@@ -60,7 +64,7 @@ proc tick*() =
   let
     (windowColumns, windowLines, ascii) = pararules.query(core.session, core.rules.getTerminalWindow)
     vimInfo = pararules.query(core.session, core.rules.getVim)
-    currentBufferIndex = pararules.find(core.session, core.rules.getCurrentBuffer)
+    currentBufferIndex = pararules.find(core.session, core.rules.getTerminalCurrentBuffer)
 
   let
     width = iw.terminalWidth()

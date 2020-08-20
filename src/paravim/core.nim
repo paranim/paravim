@@ -101,11 +101,13 @@ schema Fact(Id, Attr):
   MinimapText: ParavimTextEntity
   MinimapRects: InstancedTwoDEntity
   ShowMinimap: bool
+  # only used in terminal mode:
   WindowLines: int
   WindowColumns: int
 
 var
   nextId* = Id.high.ord + 1
+  glReady = false
   baseMonoEntity: ptext.UncompiledTextEntity
   monoEntity*: ParavimTextEntity
   uncompiledRectEntity: UncompiledTwoDEntity
@@ -149,6 +151,9 @@ var (session*, rules*) =
         (id, Lines, lines)
         (id, CursorLine, cursorLine)
         (id, CursorColumn, cursorColumn)
+        (id, VimVisualRange, visualRange)
+        (id, VimVisualBlockMode, visualBlockMode)
+        (id, VimSearchRanges, searchRanges)
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
         (id, ScrollTargetX, scrollTargetX)
@@ -160,9 +165,6 @@ var (session*, rules*) =
         (id, MinimapText, minimapText)
         (id, MinimapRects, minimapRects)
         (id, ShowMinimap, showMinimap)
-        (id, VimVisualRange, visualRange)
-        (id, VimVisualBlockMode, visualBlockMode)
-        (id, VimSearchRanges, searchRanges)
     rule getBuffer(Fact):
       what:
         (id, BufferId, bufferId)
@@ -332,12 +334,24 @@ var (session*, rules*) =
         session.insert(id, ScrollY, ret.y)
         session.insert(id, ScrollSpeedX, ret.speedX)
         session.insert(id, ScrollSpeedY, ret.speedY)
-    # only used by terminal mode:
+    # only used in terminal mode:
     rule getTerminalWindow(Fact):
       what:
         (Global, WindowColumns, windowColumns)
         (Global, WindowLines, windowLines)
         (Global, AsciiArt, ascii)
+    rule getTerminalCurrentBuffer(Fact):
+      what:
+        (Global, CurrentBufferId, bufferId)
+        (id, BufferId, bufferId)
+        (id, Lines, lines)
+        (id, CursorLine, cursorLine)
+        (id, CursorColumn, cursorColumn)
+        (id, VimVisualRange, visualRange)
+        (id, VimVisualBlockMode, visualBlockMode)
+        (id, VimSearchRanges, searchRanges)
+        (id, ScrollX, scrollX)
+        (id, ScrollY, scrollY)
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
@@ -415,6 +429,8 @@ proc fontInc*() =
     session.insert(Global, FontSize, newFontSize)
 
 proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes) =
+  if not glReady:
+    return
   var e = gl.copy(monoEntity)
   for i in 0 ..< lines[].len:
     let parsedLine = if parsed != nil: parsed[i] else: @[]
@@ -423,6 +439,8 @@ proc insertTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes) =
   session.insert(id, Text, e)
 
 proc updateTextEntity*(id: int, lines: RefStrings, parsed: tree_sitter.Nodes, textEntity: ParavimTextEntity, bu: BufferUpdateTuple) =
+  if not glReady:
+    return
   var
     e = textEntity
     nextEntity = textEntity
@@ -482,6 +500,7 @@ proc init*(game: var RootGame, showAscii: bool, density: float) =
   uncompiledRectEntity = initTwoDEntity(primitives.rectangle[GLfloat]())
   rectEntity = compile(game, uncompiledRectEntity)
   rectsEntity = compile(game, initInstancedEntity(uncompiledRectEntity))
+  glReady = true
 
   # set initial values
   session.insert(Global, FontSize, defaultFontSize * density)
