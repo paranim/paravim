@@ -255,7 +255,7 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
   session.insert(buffer.id, Tree, newTree)
   # update text entity
   block:
-    let index = pararules.find(session, rules.getBufferText, bufferId = buffer.id)
+    let index = pararules.find(session, rules.getBufferText, id = buffer.id)
     if index == -1:
       return
     let text = pararules.get(session, rules.getBufferText, index).text
