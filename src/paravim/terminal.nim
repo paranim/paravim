@@ -23,9 +23,6 @@ const iwToVimSpecials =
    iw.Key.PageUp.ord: "<PageUp>",
    iw.Key.PageDown.ord: "<PageDown>",
    iw.Key.CtrlD.ord: "<C-D>",
-   iw.Key.CtrlH.ord: "<C-H>",
-   iw.Key.CtrlJ.ord: "<C-J>",
-   iw.Key.CtrlP.ord: "<C-P>",
    iw.Key.CtrlR.ord: "<C-R>",
    iw.Key.CtrlU.ord: "<C-U>",
    iw.Key.CtrlV.ord: "<C-V>",}.toTable
