@@ -4,23 +4,31 @@ from paravim/libvim import nil
 from paravim/vim import nil
 from paravim/structs import nil
 from paravim/core import nil
+from paravim/buffers import nil
 import strutils
 import tables
 
 const iwToVimSpecials =
-  {iw.Key.Backspace.ord: "BS",
-   iw.Key.Delete.ord: "Del",
-   iw.Key.Tab.ord: "Tab",
-   iw.Key.Enter.ord: "Enter",
-   iw.Key.Escape.ord: "Esc",
-   iw.Key.Up.ord: "Up",
-   iw.Key.Down.ord: "Down",
-   iw.Key.Left.ord: "Left",
-   iw.Key.Right.ord: "Right",
-   iw.Key.Home.ord: "Home",
-   iw.Key.End.ord: "End",
-   iw.Key.PageUp.ord: "PageUp",
-   iw.Key.PageDown.ord: "PageDown"}.toTable
+  {iw.Key.Backspace.ord: "<BS>",
+   iw.Key.Delete.ord: "<Del>",
+   iw.Key.Tab.ord: "<Tab>",
+   iw.Key.Enter.ord: "<Enter>",
+   iw.Key.Escape.ord: "<Esc>",
+   iw.Key.Up.ord: "<Up>",
+   iw.Key.Down.ord: "<Down>",
+   iw.Key.Left.ord: "<Left>",
+   iw.Key.Right.ord: "<Right>",
+   iw.Key.Home.ord: "<Home>",
+   iw.Key.End.ord: "<End>",
+   iw.Key.PageUp.ord: "<PageUp>",
+   iw.Key.PageDown.ord: "<PageDown>",
+   iw.Key.CtrlD.ord: "<C-D>",
+   iw.Key.CtrlH.ord: "<C-H>",
+   iw.Key.CtrlJ.ord: "<C-J>",
+   iw.Key.CtrlP.ord: "<C-P>",
+   iw.Key.CtrlR.ord: "<C-R>",
+   iw.Key.CtrlU.ord: "<C-U>",
+   iw.Key.CtrlV.ord: "<C-V>",}.toTable
 
 proc onWindowResize(width: int, height: int) =
   core.insert(core.session, core.Global, core.WindowColumns, width)
@@ -56,7 +64,7 @@ proc tick*() =
   else:
     let code = key.ord
     if iwToVimSpecials.hasKey(code):
-      vim.onInput("<" & iwToVimSpecials[code] & ">")
+      vim.onInput(iwToVimSpecials[code])
     elif code >= 32:
       vim.onInput($ char(code))
   pararules.fireRules(core.session)
@@ -83,6 +91,20 @@ proc tick*() =
     let lines = currentBuffer.lines[]
     for i in 0 ..< lines.len:
       iw.write(tb, 0, i, lines[i])
+    # selection
+    if currentBuffer.visualRange != (0, 0, 0, 0):
+      let
+        rects =
+          if currentBuffer.visualBlockMode:
+            @[buffers.rangeToRect(buffers.normalizeRange(currentBuffer.visualRange, true))]
+          else:
+            buffers.rangeToRects(buffers.normalizeRange(currentBuffer.visualRange, false), currentBuffer.lines)
+      for (left, top, width, height) in rects:
+        for col in left.int ..< int(left + width):
+          for row in top.int ..< int(top + height):
+            var ch = tb[col, row]
+            ch.bg = iw.bgMagenta
+            tb[col, row] = ch
     # cursor
     var ch = tb[currentBuffer.cursorColumn, currentBuffer.cursorLine]
     ch.bg = iw.bgYellow
