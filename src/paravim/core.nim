@@ -354,6 +354,28 @@ var (session*, rules*) =
         (Global, WindowColumns, windowColumns)
         (Global, WindowLines, windowLines)
         (Global, AsciiArt, ascii)
+    rule updateTerminalScrollX(Fact):
+      what:
+        (Global, WindowColumns, windowColumns)
+        (id, CursorColumn, cursorColumn)
+        (id, ScrollX, scrollX, then = false)
+      then:
+        let scrollRight = scrollX.int + windowColumns - 1
+        if cursorColumn < scrollX.int:
+          session.insert(id, ScrollX, cursorColumn.float)
+        elif cursorColumn > scrollRight:
+          session.insert(id, ScrollX, scrollX + float(cursorColumn - scrollRight))
+    rule updateTerminalScrollY(Fact):
+      what:
+        (Global, WindowLines, windowLines)
+        (id, CursorLine, cursorLine)
+        (id, ScrollY, scrollY, then = false)
+      then:
+        let scrollBottom = scrollY.int + windowLines - 2
+        if cursorLine < scrollY.int:
+          session.insert(id, ScrollY, cursorLine.float)
+        elif cursorLine > scrollBottom:
+          session.insert(id, ScrollY, scrollY + float(cursorLine - scrollBottom))
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)

@@ -88,9 +88,19 @@ proc tick*() =
   elif currentBufferIndex >= 0:
     let currentBuffer = pararules.get(core.session, core.rules.getCurrentBuffer, currentBufferIndex)
     # text
-    let lines = currentBuffer.lines[]
-    for i in 0 ..< lines.len:
-      iw.write(tb, 0, i, lines[i])
+    let
+      lines = currentBuffer.lines[]
+      scrollX = currentBuffer.scrollX.int
+      scrollY = currentBuffer.scrollY.int
+    var screenLine = 0
+    for i in scrollY ..< lines.len:
+      if screenLine >= height - 1:
+        break
+      var line = lines[i]
+      if scrollX > 0 and scrollX < line.len:
+        line = line[scrollX ..< line.len]
+      iw.write(tb, 0, screenLine, line)
+      screenLine += 1
     # selection
     if currentBuffer.visualRange != (0, 0, 0, 0):
       let
@@ -106,9 +116,12 @@ proc tick*() =
             ch.bg = iw.bgMagenta
             tb[col, row] = ch
     # cursor
-    var ch = tb[currentBuffer.cursorColumn, currentBuffer.cursorLine]
+    let
+      cursorColumn = currentBuffer.cursorColumn - currentBuffer.scrollX.int
+      cursorLine = currentBuffer.cursorLine - currentBuffer.scrollY.int
+    var ch = tb[cursorColumn, cursorLine]
     ch.bg = iw.bgYellow
-    tb[currentBuffer.cursorColumn, currentBuffer.cursorLine] = ch
+    tb[cursorColumn, cursorLine] = ch
 
   if vimInfo.mode == libvim.CommandLine.ord:
     iw.write(tb, 0, height-1, vimInfo.commandStart & vimInfo.commandText)
