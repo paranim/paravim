@@ -156,6 +156,18 @@ var (session*, rules*) =
         (id, VimSearchRanges, searchRanges)
         (id, ScrollX, scrollX)
         (id, ScrollY, scrollY)
+    rule getCurrentBufferExtended(Fact):
+      what:
+        (Global, CurrentBufferId, bufferId)
+        (id, BufferId, bufferId)
+        (id, Lines, lines)
+        (id, CursorLine, cursorLine)
+        (id, CursorColumn, cursorColumn)
+        (id, VimVisualRange, visualRange)
+        (id, VimVisualBlockMode, visualBlockMode)
+        (id, VimSearchRanges, searchRanges)
+        (id, ScrollX, scrollX)
+        (id, ScrollY, scrollY)
         (id, ScrollTargetX, scrollTargetX)
         (id, ScrollTargetY, scrollTargetY)
         (id, ScrollSpeedX, scrollSpeedX)
@@ -340,18 +352,6 @@ var (session*, rules*) =
         (Global, WindowColumns, windowColumns)
         (Global, WindowLines, windowLines)
         (Global, AsciiArt, ascii)
-    rule getTerminalCurrentBuffer(Fact):
-      what:
-        (Global, CurrentBufferId, bufferId)
-        (id, BufferId, bufferId)
-        (id, Lines, lines)
-        (id, CursorLine, cursorLine)
-        (id, CursorColumn, cursorColumn)
-        (id, VimVisualRange, visualRange)
-        (id, VimVisualBlockMode, visualBlockMode)
-        (id, VimSearchRanges, searchRanges)
-        (id, ScrollX, scrollX)
-        (id, ScrollY, scrollY)
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
@@ -402,7 +402,7 @@ proc onScroll*(xoffset: float64, yoffset: float64) =
   if index == -1:
     return
   let
-    buffer = session.get(rules.getCurrentBuffer, index)
+    buffer = session.get(rules.getCurrentBufferExtended, index)
     scrollData = (
       buffer.scrollX, buffer.scrollY,
       buffer.scrollTargetX, buffer.scrollTargetY,
@@ -515,7 +515,7 @@ proc tick*(game: RootGame, clear: bool): bool =
     (windowWidth, windowHeight, ascii) = session.query(rules.getWindow)
     (fontSize) = session.query(rules.getFont)
     vim = session.query(rules.getVim)
-    currentBufferIndex = session.find(rules.getCurrentBuffer)
+    currentBufferIndex = session.find(rules.getCurrentBufferExtended)
     fontWidth = text.monoFontWidth * fontSize
     fontHeight = text.monoFont.height * fontSize
 
@@ -541,7 +541,7 @@ proc tick*(game: RootGame, clear: bool): bool =
     e.scale(fontSize, fontSize)
     render(game, e)
   elif currentBufferIndex >= 0:
-    let currentBuffer = session.get(rules.getCurrentBuffer, currentBufferIndex)
+    let currentBuffer = session.get(rules.getCurrentBufferExtended, currentBufferIndex)
     result =
       currentBuffer.scrollX != currentBuffer.scrollTargetX or
       currentBuffer.scrollY != currentBuffer.scrollTargetY

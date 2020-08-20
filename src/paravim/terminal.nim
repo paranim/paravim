@@ -1,4 +1,4 @@
-from illwill as iw import nil
+import illwill as iw
 from pararules import nil
 from paravim/libvim import nil
 from paravim/vim import nil
@@ -64,7 +64,7 @@ proc tick*() =
   let
     (windowColumns, windowLines, ascii) = pararules.query(core.session, core.rules.getTerminalWindow)
     vimInfo = pararules.query(core.session, core.rules.getVim)
-    currentBufferIndex = pararules.find(core.session, core.rules.getTerminalCurrentBuffer)
+    currentBufferIndex = pararules.find(core.session, core.rules.getCurrentBuffer)
 
   let
     width = iw.terminalWidth()
@@ -78,10 +78,15 @@ proc tick*() =
     for i in 0 ..< lines.len:
       iw.write(tb, 0, i, lines[i])
   elif currentBufferIndex >= 0:
-    let currentBuffer = pararules.get(core.session, core.rules.getTerminalCurrentBuffer, currentBufferIndex)
+    let currentBuffer = pararules.get(core.session, core.rules.getCurrentBuffer, currentBufferIndex)
+    # text
     let lines = currentBuffer.lines[]
     for i in 0 ..< lines.len:
       iw.write(tb, 0, i, lines[i])
+    # cursor
+    var ch = tb[currentBuffer.cursorColumn, currentBuffer.cursorLine]
+    ch.bg = iw.bgYellow
+    tb[currentBuffer.cursorColumn, currentBuffer.cursorLine] = ch
 
   if vimInfo.mode == libvim.CommandLine.ord:
     iw.write(tb, 0, height-1, vimInfo.commandStart & vimInfo.commandText)
