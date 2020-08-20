@@ -253,7 +253,13 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
     newTree = tree_sitter.editTree(buffer.tree, buffer.parser, newLines)
     parsed = tree_sitter.parse(newTree, newLines[].len)
   session.insert(buffer.id, Tree, newTree)
-  updateTextEntity(buffer.id, newLines, parsed, buffer.text, bu)
+  # update text entity
+  block:
+    let index = pararules.find(session, rules.getBufferText, bufferId = buffer.id)
+    if index == -1:
+      return
+    let text = pararules.get(session, rules.getBufferText, index).text
+    updateTextEntity(buffer.id, newLines, parsed, text, bu)
 
 proc onStopSearch() {.cdecl.} =
   session.insert(Global, VimShowSearch, false)

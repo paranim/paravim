@@ -181,9 +181,11 @@ var (session*, rules*) =
       what:
         (id, BufferId, bufferId)
         (id, Lines, lines)
-        (id, Text, text)
         (id, Tree, tree)
         (id, Parser, parser)
+    rule getBufferText(Fact):
+      what:
+        (id, Text, text)
     rule resizeWindow(Fact):
       what:
         (Global, WindowWidth, windowWidth)
