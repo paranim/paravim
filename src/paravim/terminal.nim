@@ -57,6 +57,16 @@ proc init*(params: seq[string]) =
   for fname in params:
     discard libvim.vimBufferOpen(fname, 1, 0)
 
+proc setCharBackground(tb: var iw.TerminalBuffer, col, row, scrollX, scrollY: int, color: iw.BackgroundColor) =
+  let
+    col = col - scrollX
+    row = row - scrollY
+  if col < 0 or row < 0:
+    return
+  var ch = tb[col, row]
+  ch.bg = color
+  tb[col, row] = ch
+
 proc tick*() =
   var key = iw.getKey()
   case key
@@ -112,18 +122,20 @@ proc tick*() =
       for (left, top, width, height) in rects:
         for col in left.int ..< int(left + width):
           for row in top.int ..< int(top + height):
-            var ch = tb[col, row]
-            ch.bg = iw.bgMagenta
-            tb[col, row] = ch
+            setCharBackground(tb, col, row, currentBuffer.scrollX.int, currentBuffer.scrollY.int, iw.bgCyan)
+    # search
+    if vimInfo.showSearch:
+      for highlight in currentBuffer.searchRanges:
+        let rects = buffers.rangeToRects(highlight, currentBuffer.lines)
+        for (left, top, width, height) in rects:
+          for col in left.int ..< int(left + width):
+            for row in top.int ..< int(top + height):
+              setCharBackground(tb, col, row, currentBuffer.scrollX.int, currentBuffer.scrollY.int, iw.bgMagenta)
     # cursor
-    let
-      cursorColumn = currentBuffer.cursorColumn - currentBuffer.scrollX.int
-      cursorLine = currentBuffer.cursorLine - currentBuffer.scrollY.int
-    var ch = tb[cursorColumn, cursorLine]
-    ch.bg = iw.bgYellow
-    tb[cursorColumn, cursorLine] = ch
+    setCharBackground(tb, currentBuffer.cursorColumn, currentBuffer.cursorLine, currentBuffer.scrollX.int, currentBuffer.scrollY.int, iw.bgYellow)
 
   if vimInfo.mode == libvim.CommandLine.ord:
+    # command line text
     iw.write(tb, 0, height-1, vimInfo.commandStart & vimInfo.commandText)
     if vimInfo.commandCompletion != "":
       let
