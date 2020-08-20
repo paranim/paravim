@@ -21,6 +21,10 @@ const iwToVimSpecials =
    iw.Key.PageUp.ord: "PageUp",
    iw.Key.PageDown.ord: "PageDown"}.toTable
 
+proc onWindowResize(width: int, height: int) =
+  core.insert(core.session, core.Global, core.WindowColumns, width)
+  core.insert(core.session, core.Global, core.WindowLines, height)
+
 proc exitProc() {.noconv.} =
   iw.illwillDeinit()
   iw.showCursor()
@@ -37,7 +41,7 @@ proc init*() =
   proc onYank(yankInfo: ptr structs.yankInfo_T) {.cdecl.} =
     discard
 
-  core.onWindowResize(iw.terminalWidth(), iw.terminalHeight())
+  onWindowResize(iw.terminalWidth(), iw.terminalHeight())
   vim.init(onQuit, onYank)
   core.initAscii(true)
 
@@ -54,7 +58,7 @@ proc tick*() =
   pararules.fireRules(core.session)
 
   let
-    (windowWidth, windowHeight, ascii) = pararules.query(core.session, core.rules.getWindow)
+    (windowColumns, windowLines, ascii) = pararules.query(core.session, core.rules.getTerminalWindow)
     vimInfo = pararules.query(core.session, core.rules.getVim)
     currentBufferIndex = pararules.find(core.session, core.rules.getCurrentBuffer)
 
@@ -62,8 +66,8 @@ proc tick*() =
     width = iw.terminalWidth()
     height = iw.terminalHeight()
   var tb = iw.newTerminalBuffer(width, height)
-  if width != windowWidth or height != windowHeight:
-    core.onWindowResize(width, height)
+  if width != windowColumns or height != windowLines:
+    onWindowResize(width, height)
 
   if ascii != "":
     let lines = core.asciiArt[ascii]

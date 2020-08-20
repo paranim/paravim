@@ -56,6 +56,8 @@ type
     Tree, Parser,
     Text, CroppedText, MinimapText, MinimapRects,
     ShowMinimap,
+    # only used by terminal mode:
+    WindowColumns, WindowLines,
   RefStrings = ref seq[string]
   RangeTuples = seq[RangeTuple]
 
@@ -99,6 +101,8 @@ schema Fact(Id, Attr):
   MinimapText: ParavimTextEntity
   MinimapRects: InstancedTwoDEntity
   ShowMinimap: bool
+  WindowLines: int
+  WindowColumns: int
 
 var
   nextId* = Id.high.ord + 1
@@ -328,6 +332,12 @@ var (session*, rules*) =
         session.insert(id, ScrollY, ret.y)
         session.insert(id, ScrollSpeedX, ret.speedX)
         session.insert(id, ScrollSpeedY, ret.speedY)
+    # only used by terminal mode:
+    rule getTerminalWindow(Fact):
+      what:
+        (Global, WindowColumns, windowColumns)
+        (Global, WindowLines, windowLines)
+        (Global, AsciiArt, ascii)
 
 proc getCurrentSessionId*(): int =
   let index = session.find(rules.getCurrentBuffer)
