@@ -132,17 +132,21 @@ proc tick*() =
             for row in top.int ..< int(top + height):
               setCharBackground(tb, col, row, currentBuffer.scrollX.int, currentBuffer.scrollY.int, iw.bgMagenta)
     # cursor
-    setCharBackground(tb, currentBuffer.cursorColumn, currentBuffer.cursorLine, currentBuffer.scrollX.int, currentBuffer.scrollY.int, iw.bgYellow)
+    if vimInfo.mode != libvim.CommandLine.ord:
+      setCharBackground(tb, currentBuffer.cursorColumn, currentBuffer.cursorLine, currentBuffer.scrollX.int, currentBuffer.scrollY.int, iw.bgYellow)
 
   if vimInfo.mode == libvim.CommandLine.ord:
+    let line = height-1
     # command line text
-    iw.write(tb, 0, height-1, vimInfo.commandStart & vimInfo.commandText)
+    iw.write(tb, 0, line, vimInfo.commandStart & vimInfo.commandText)
     if vimInfo.commandCompletion != "":
       let
         compLen = vimInfo.commandCompletion.len
         commLen = vimInfo.commandText.len
       if compLen > commLen:
-        iw.write(tb, commLen+1, height-1, iw.fgYellow, vimInfo.commandCompletion[commLen ..< compLen])
+        iw.write(tb, commLen+1, line, iw.fgBlue, vimInfo.commandCompletion[commLen ..< compLen])
+    # command line cursor
+    setCharBackground(tb, vimInfo.commandPosition + 1, line, 0, 0, iw.bgYellow)
 
   iw.setCursorPos(tb, 0, 0)
   iw.display(tb)
