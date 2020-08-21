@@ -89,7 +89,7 @@ proc init*(params: seq[string]) =
 
   onWindowResize(iw.terminalWidth(), iw.terminalHeight())
   vim.init(onQuit, onYank)
-  core.initAscii(true)
+  core.initAscii(params.len == 0)
 
   for fname in params:
     discard libvim.vimBufferOpen(fname, 1, 0)
