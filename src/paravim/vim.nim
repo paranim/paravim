@@ -254,6 +254,7 @@ proc onBufferUpdate(bufferUpdate: bufferUpdate_T) {.cdecl.} =
     newTree = tree_sitter.editTree(buffer.tree, buffer.parser, newLines)
     parsed = tree_sitter.parse(newTree, newLines[].len)
   session.insert(buffer.id, Tree, newTree)
+  pararules.fireRules(session) # fire rules manually so the following query gets the latest data
   # update text entity
   block:
     let index = pararules.find(session, rules.getBufferEntities, id = buffer.id)
