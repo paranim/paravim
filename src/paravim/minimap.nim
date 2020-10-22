@@ -22,7 +22,7 @@ proc initMinimap*(
   ): Minimap =
   const
     minSizeToShowChars = (defaultFontSize * 2) / minimapScale
-    minChars = 30 # minimum number of chars that minimap must be able to display
+    minChars = 40 # minimum number of chars that minimap must be able to display
     maxLines = 1000 # u_char_counts can only hold this many
   let
     fontWidth = text.monoFontWidth * fontSize
