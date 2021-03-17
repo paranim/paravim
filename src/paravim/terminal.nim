@@ -143,8 +143,11 @@ proc tick*() =
       if screenLine >= height - 1:
         break
       var line = lines[i]
-      if scrollX > 0 and scrollX < line.len:
-        line = line[scrollX ..< line.len]
+      if scrollX < line.len:
+        if scrollX > 0:
+          line = line[scrollX ..< line.len]
+      else:
+        line = ""
       iw.write(tb, 0, screenLine, line)
       screenLine += 1
     # selection
