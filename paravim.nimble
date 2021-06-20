@@ -21,6 +21,6 @@ installExt    = @[
 
 requires "nim >= 1.2.6"
 requires "paranim >= 0.11.0"
-requires "pararules >= 0.17.0"
+requires "pararules >= 0.18.0"
 requires "paratext >= 0.11.0"
 requires "illwill >= 0.2.0"
