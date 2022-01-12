@@ -12,7 +12,6 @@ import tree_sitter/tree_sitter/api
 from os import nil
 from strutils import nil
 from colors import nil
-from buffers import nil
 import tables
 
 proc free(p: pointer) {.cdecl, importc: "free".}
