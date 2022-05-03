@@ -10,7 +10,7 @@ from paranim/gl import nil
 from paravim/libvim import nil
 from paravim import nil
 from paravim/vim import nil
-import nimgl/glfw
+import paranim/glfw
 
 var game = gl.RootGame()
 

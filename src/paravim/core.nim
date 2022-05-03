@@ -1,5 +1,5 @@
-import nimgl/opengl
-from nimgl/glfw import GLFWKey
+import paranim/opengl
+from paranim/glfw import GLFWKey
 import paranim/gl, paranim/gl/entities
 from paranim/primitives import nil
 from paranim/math as pmath import translate
@@ -10,7 +10,7 @@ from buffers import RangeTuple, BufferUpdateTuple
 import colors
 import sets
 from math import `mod`
-from glm import nil
+from paranim/glm import nil
 from libvim import nil
 from structs import nil
 import tables

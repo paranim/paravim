@@ -1,5 +1,5 @@
-import nimgl/opengl
-from glm import nil
+import paranim/opengl
+from paranim/glm import nil
 import tables
 
 const

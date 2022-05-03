@@ -1,4 +1,4 @@
-import nimgl/opengl, glm
+import paranim/opengl, paranim/glm
 import paranim/gl, paranim/gl/uniforms, paranim/gl/attributes
 from paranim/gl/entities import crop, color
 import paratext, paratext/gl/text
