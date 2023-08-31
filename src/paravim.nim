@@ -132,4 +132,5 @@ proc tick*(game: gl.RootGame): bool =
   tick(game, false)
 
 proc isNormalMode*(): bool =
-  libvim.vimGetMode() in {libvim.Normal.ord, libvim.NormalBusy.ord}
+  let mode = libvim.vimGetMode()
+  mode == libvim.Normal.ord or mode == libvim.NormalBusy.ord
